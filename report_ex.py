@@ -18,14 +18,26 @@ class ODRLEvaluator:
             activation_state = self.evaluate_activation_state(permission)
             if activation_state == "Active" and permission["action"] == action and permission["target"] == target:
                 return {
+                    "@context": {
+                        "report": "https://w3c/report",
+                        "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
+                    },
+                    "report": "Yes, you can because the permission is active and the requested action is allowed.",
                     "permission": permission,
                     "activation_state": activation_state,
-                    "access_control": "Permit"
+                    "access_control": "Permit",
+                    "rdfs:comment": "The requested action was permitted based on the current time and constraints."
                 }
         return {
+            "@context": {
+                "report": "https://w3c/report",
+                "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
+            },
+            "report": "No, you cannot because the permission is inactive or the requested action is not allowed.",
             "permission": None,
             "activation_state": "Inactive",
-            "access_control": "Deny"
+            "access_control": "Deny",
+            "rdfs:comment": "The requested action was denied because the permission is not active or does not match the requested action/target."
         }
 
 # example policy and context from https://w3c.github.io/odrl/formal-semantics/ EX13-1
