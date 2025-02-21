@@ -5,7 +5,7 @@ from report_ex import ODRLEvaluator, policies  # import the evaluator and polici
 
 app = FastAPI()
 
-# tried&failed: changed the PolicyEvaluationInput model to accept raw JSON-LD
+# tried & failed: changed the PolicyEvaluationInput model to accept raw JSON-LD
 class PolicyEvaluationInput(BaseModel):
     policies: List[Dict[str, Any]]  
     current_time: str
