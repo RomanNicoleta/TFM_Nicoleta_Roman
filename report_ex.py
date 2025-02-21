@@ -14,35 +14,46 @@ class ODRLEvaluator:
                     return "Active"
         return "Inactive"
     
-    def evaluate_access(self, action, target):
+    def evaluate_access(self, policy, action, target):
+        reports = []
+        for permission in policy.get("permission", []):
+            activation_state = self.evaluate_activation_state(permission)
+            if activation_state == "Active" and permission["action"] == action and permission["target"] == target:
+                reports.append({
+                    "@context": {
+                        "report": "https://w3c/report",
+                        "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
+                    },
+                    "report": "Yes, you can because the permission is active and the requested action is allowed.",
+                    "permission": permission,
+                    "activation_state": activation_state,
+                    "access_control": "Permit",
+                    "rdfs:comment": "The requested action was permitted based on the current time and constraints.",
+                    "policy_uid": policy["uid"]
+                })
+            else:
+                reports.append({
+                    "@context": {
+                        "report": "https://w3c/report",
+                        "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
+                    },
+                    "report": "No, you cannot because the permission is inactive or the requested action is not allowed.",
+                    "permission": permission,
+                    "activation_state": activation_state,
+                    "access_control": "Deny",
+                    "rdfs:comment": "The requested action was denied because the permission is not active or does not match the requested action/target.",
+                    "policy_uid": policy["uid"]
+                })
+        return reports
+    
+    def evaluate_all_policies(self, action, target):
+        all_reports = []
         for policy in self.policies:
-            for permission in policy.get("permission", []):
-                activation_state = self.evaluate_activation_state(permission)
-                if activation_state == "Active" and permission["action"] == action and permission["target"] == target:
-                    return {
-                        "@context": {
-                            "report": "https://w3c/report",
-                            "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
-                        },
-                        "report": "Yes, you can because the permission is active and the requested action is allowed.",
-                        "permission": permission,
-                        "activation_state": activation_state,
-                        "access_control": "Permit",
-                        "rdfs:comment": "The requested action was permitted based on the current time and constraints."
-                    }
-        return {
-            "@context": {
-                "report": "https://w3c/report",
-                "rdfs": "http://www.w3.org/2000/01/rdf-schema#"
-            },
-            "report": "No, you cannot because the permission is inactive or the requested action is not allowed.",
-            "permission": None,
-            "activation_state": "Inactive",
-            "access_control": "Deny",
-            "rdfs:comment": "The requested action was denied because the permission is not active or does not match the requested action/target."
-        }
+            policy_reports = self.evaluate_access(policy, action, target)
+            all_reports.extend(policy_reports)
+        return all_reports
 
-# defined multiple policies
+# Define multiple policies
 policies = [
     {
         # Example 13 available on https://w3c.github.io/odrl/formal-semantics/examples/policy13.json
@@ -129,7 +140,8 @@ target = "http://example.com/document/1234"
 
 # Evaluation stage
 evaluator = ODRLEvaluator(policies, current_time)
-result = evaluator.evaluate_access(action, target)
+reports = evaluator.evaluate_all_policies(action, target)
 
-# Result
-print(json.dumps(result, indent=2))
+# Generate Reports
+for report in reports:
+    print(json.dumps(report, indent=2))
