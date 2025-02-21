@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policy Evaluation Report</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Policy Evaluation Report Generator</h1>
+        <div class="input-container">
+            <label for="policySelect">Select Policy:</label>
+            <select id="policySelect">
+                <option value="policy13">Policy 13</option>
+                <option value="policy14">Policy 14</option>
+                <option value="policy15">Policy 15</option>
+            </select>
+
+            <label for="requestSelect">Select Request:</label>
+            <select id="requestSelect">
+                <option value="distribute">Distribute</option>
+                <option value="print">Print</option>
+                <option value="reproduce">Reproduce</option>
+            </select>
+
+            <label for="currentTime">Current Time:</label>
+            <input type="datetime-local" id="currentTime" required>
+
+            <label for="target">Target (URL):</label>
+            <input type="text" id="target" placeholder="Enter target URL">
+
+            <button id="generateReportBtn">Generate Report</button>
+        </div>
+
+        <div class="output-container">
+            <h2>Generated Report</h2>
+            <pre id="reportOutput"></pre>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
