@@ -3,22 +3,80 @@ import json
 
 class ODRLEvaluator:
     def __init__(self, policies, current_time):
-        self.policies = policies  # List of policies
-        self.current_time = datetime.strptime(current_time, "%Y-%m-%dT%H:%M:%S.%fZ")
+        self.policies = policies
+        try:
+            self.current_time = datetime.strptime(current_time, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            # Handle ISO format without milliseconds
+            self.current_time = datetime.strptime(current_time, "%Y-%m-%dT%H:%M:%SZ")
     
     def evaluate_activation_state(self, permission):
+        """Evaluate if a permission is active based on time constraints"""
+        # Check for constraints directly in permission
         for constraint in permission.get("constraint", []):
-            if constraint["leftOperand"] == "dateTime" and constraint["operator"] == "lt":
+            if isinstance(constraint, dict) and constraint.get("leftOperand") == "dateTime" and constraint.get("operator") == "lt":
                 constraint_time = datetime.strptime(constraint["rightOperand"]["@value"], "%Y-%m-%d")
                 if self.current_time < constraint_time:
                     return "Active"
-        return "Inactive"
+                else:
+                    return "Inactive"
+        
+        # Check for constraints in action refinements
+        action = permission.get("action", "")
+        if isinstance(action, list):
+            for act in action:
+                if isinstance(act, dict) and "refinement" in act:
+                    refinements = act["refinement"]
+                    if isinstance(refinements, list):
+                        for refinement in refinements:
+                            if refinement.get("leftOperand") == "dateTime" and refinement.get("operator") == "lt":
+                                constraint_time = datetime.strptime(refinement["rightOperand"]["@value"], "%Y-%m-%d")
+                                if self.current_time < constraint_time:
+                                    return "Active"
+                                else:
+                                    return "Inactive"
+        
+        # Default to active if no time constraints found
+        return "Active"
+    
+    def get_action_value(self, action_field):
+        """Extract the action value from different action formats"""
+        if isinstance(action_field, str):
+            return action_field
+        elif isinstance(action_field, list):
+            for act in action_field:
+                if isinstance(act, dict) and "rdf:value" in act:
+                    value = act["rdf:value"]
+                    if isinstance(value, dict) and "@id" in value:
+                        # Handle format like: "rdf:value": { "@id": "odrl:print" }
+                        return value["@id"].replace("odrl:", "")
+        return None
+    
+    def matches_action_and_target(self, permission, requested_action, requested_target):
+        """Check if permission matches the requested action and target"""
+        # Extract action value
+        permission_action = self.get_action_value(permission.get("action", ""))
+        
+        # Extract target
+        permission_target = permission.get("target", "")
+        
+        # Simple action and target matching
+        action_match = (permission_action == requested_action or 
+                       f"odrl:{requested_action}" == permission_action)
+        
+        target_match = (permission_target == requested_target)
+        
+        return action_match and target_match
     
     def evaluate_access(self, policy, action, target):
+        """Evaluate if a policy permits access for the requested action and target"""
         reports = []
+        
+        # Handle permissions
         for permission in policy.get("permission", []):
             activation_state = self.evaluate_activation_state(permission)
-            if activation_state == "Active" and permission["action"] == action and permission["target"] == target:
+            
+            if activation_state == "Active" and self.matches_action_and_target(permission, action, target):
                 reports.append({
                     "@context": {
                         "report": "https://w3c/report",
@@ -29,7 +87,7 @@ class ODRLEvaluator:
                     "activation_state": activation_state,
                     "access_control": "Permit",
                     "rdfs:comment": "The requested action was permitted based on the current time and constraints.",
-                    "policy_uid": policy["uid"]
+                    "policy_uid": policy.get("uid", "unknown")
                 })
             else:
                 reports.append({
@@ -42,106 +100,44 @@ class ODRLEvaluator:
                     "activation_state": activation_state,
                     "access_control": "Deny",
                     "rdfs:comment": "The requested action was denied because the permission is not active or does not match the requested action/target.",
-                    "policy_uid": policy["uid"]
+                    "policy_uid": policy.get("uid", "unknown")
                 })
+        
         return reports
     
     def evaluate_all_policies(self, action, target):
+        """Evaluate all policies for the given action and target"""
         all_reports = []
-        for policy in self.policies:
+        
+        # Filter out constraint objects (only process policy objects)
+        policy_objects = [p for p in self.policies if p.get("@type") in ["Set", "Offer", "Agreement"]]
+        
+        for policy in policy_objects:
             policy_reports = self.evaluate_access(policy, action, target)
             all_reports.extend(policy_reports)
+        
         return all_reports
 
-# Define multiple policies
-policies = [
-    {
-        # Example 13 available on https://w3c.github.io/odrl/formal-semantics/examples/policy13.json
+# If run standalone, provide example evaluation
+if __name__ == "__main__":
+    # Example policy for testing
+    test_policy = {
         "@context": "http://www.w3.org/ns/odrl.jsonld",
         "@type": "Set",
-        "uid": "http://example.com/policy/13",
+        "uid": "http://example.com/policy/test",
         "permission": [{
-            "uid": "http://example.com/policy/13/permission/1",
             "target": "http://example.com/document/1234",
-            "assigner": "http://example.com/party/16",
             "action": "distribute",
             "constraint": [{
-                "@id": "http://example.com/constraint/1",
                 "leftOperand": "dateTime",
                 "operator": "lt",
-                "rightOperand": { "@value": "2018-01-01", "@type": "xsd:date" }
+                "rightOperand": { "@value": "2099-01-01", "@type": "xsd:date" }
             }]
         }]
-    },
-    {
-        # Example 14 available on https://www.w3.org/TR/odrl-model/#constraint-action
-        "@context": "http://www.w3.org/ns/odrl.jsonld",
-        "@type": "Offer",
-        "uid": "http://example.com/policy:6161",
-        "profile": "http://example.com/odrl:profile:10",
-        "permission": [{
-            "target": "http://example.com/document:1234",
-            "assigner": "http://example.com/org:616",
-            "action": [{
-                "rdf:value": { "@id": "odrl:print" },
-                "refinement": [{
-                    "leftOperand": "resolution",
-                    "operator": "lteq",
-                    "rightOperand": { "@value": "1200", "@type": "xsd:integer" },
-                    "unit": "http://dbpedia.org/resource/Dots_per_inch"
-                }]
-            }]
-        }]
-    },
-    {
-        # Example 15 available on https://www.w3.org/TR/odrl-model/#constraint-action
-        "@context": "http://www.w3.org/ns/odrl.jsonld",
-        "@type": "Offer",
-        "uid": "http://example.com/policy:88",
-        "profile": "http://example.com/odrl:profile:10",
-        "permission": [{
-            "target": "http://example.com/book/1999",
-            "assigner": "http://example.com/org/paisley-park",
-            "action": [{
-                "rdf:value": { "@id": "odrl:reproduce" },
-                "refinement": {
-                    "xone": { 
-                        "@list": [ 
-                            { "@id": "http://example.com/p:88/C1" },
-                            { "@id": "http://example.com/p:88/C2" } 
-                        ]
-                    }
-                }
-            }]
-        }]
-    },
-    {
-        "@context": "http://www.w3.org/ns/odrl.jsonld",
-        "@type": "Constraint",
-        "uid": "http://example.com/p:88/C1",
-        "leftOperand": "media",
-        "operator": "eq",
-        "rightOperand": { "@value": "online", "@type": "xsd:string" }
-    },
-    {
-        "@context": "http://www.w3.org/ns/odrl.jsonld",
-        "@type": "Constraint",
-        "uid": "http://example.com/p:88/C2",
-        "leftOperand": "media",
-        "operator": "eq",
-        "rightOperand": { "@value": "print", "@type": "xsd:string" }
     }
-]
-
-# Current time, action, and target
-current_time = "2017-12-31T23:59:59.999Z"
-action = "distribute"
-target = "http://example.com/document/1234"
-
-# Evaluation stage
-evaluator = ODRLEvaluator(policies, current_time)
-reports = evaluator.evaluate_all_policies(action, target)
-
-# Generate Reports
-for report in reports:
-    print(json.dumps(report, indent=2))
+    
+    evaluator = ODRLEvaluator([test_policy], "2023-01-01T00:00:00.000Z")
+    reports = evaluator.evaluate_all_policies("distribute", "http://example.com/document/1234")
+    
+    for report in reports:
+        print(json.dumps(report, indent=2))
