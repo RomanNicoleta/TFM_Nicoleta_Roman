@@ -37,7 +37,7 @@ class ODRLEvaluator:
                                     return "Inactive"
         
         # Default to active if no time constraints found
-        return "Active"
+        return "Inactive"
     
     def get_action_value(self, action_field):
         """Extract the action value from different action formats"""
