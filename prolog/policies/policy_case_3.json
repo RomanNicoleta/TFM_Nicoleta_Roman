@@ -1,0 +1,24 @@
+{
+  "@context": "http://www.w3.org/ns/odrl.jsonld",
+  "@type": "Set",
+  "uid": "http://example.com/policy/18",
+  "permission": [
+    {
+      "uid": "http://example.com/policy/18/permission/1",
+      "target": "http://example.com/resource/3456",
+      "assigner": "http://example.com/party/63",
+      "action": "distribute",
+      "constraint": [
+        {
+          "@id": "http://example.com/constraint/7",
+          "leftOperand": "dateTime",
+          "operator": "gt",
+          "rightOperand": {
+            "@value": "2026-01-01T00:00:00Z",
+            "@type": "xsd:dateTime"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "@context": "http://www.w3.org/ns/odrl.jsonld",
+  "@type": "Set",
+  "uid": "http://example.com/policy/20",
+  "permission": [
+    {
+      "uid": "http://example.com/policy/20/permission/1",
+      "target": "http://example.com/financial-data/2345",
+      "assigner": "http://example.com/org/finance-department",
+      "action": "modify",
+      "constraint": [
+        {
+          "@id": "http://example.com/constraint/9",
+          "leftOperand": "role",
+          "operator": "isPartOf",
+          "rightOperand": "senior-manager"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "@context": "http://www.w3.org/ns/odrl.jsonld",
+  "@type": "Set",
+  "uid": "http://example.com/policy/24",
+  "permission": [
+    {
+      "uid": "http://example.com/policy/24/permission/1",
+      "target": "http://example.com/sensitive-data/9012",
+      "assigner": "http://example.com/org/global-security",
+      "action": "access",
+      "constraint": [
+        {
+          "@id": "http://example.com/constraint/14",
+          "leftOperand": "country",
+          "operator": "in",
+          "rightOperand": ["https://schema.org/Country/JP"]
+        },
+        {
+          "@id": "http://example.com/constraint/15",
+          "leftOperand": "organization",
+          "operator": "notEq",
+          "rightOperand": "http://example.com/company/TechNewYork"
+        }
+      ]
+    }
+  ]
+}

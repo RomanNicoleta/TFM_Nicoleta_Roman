@@ -1,0 +1,21 @@
+{
+  "@context": "http://www.w3.org/ns/odrl.jsonld",
+  "@type": "Set",
+  "uid": "http://example.com/policy/19",
+  "permission": [
+    {
+      "uid": "http://example.com/policy/19/permission/1",
+      "target": "http://example.com/confidential-report/7890",
+      "assigner": "http://example.com/org/security-department",
+      "action": "access",
+      "constraint": [
+        {
+          "@id": "http://example.com/constraint/8",
+          "leftOperand": "role",
+          "operator": "isPartOf",
+          "rightOperand": "cybersecurity-expert"
+        }
+      ]
+    }
+  ]
+}

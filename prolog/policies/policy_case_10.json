@@ -1,0 +1,31 @@
+{
+  "@context": "http://www.w3.org/ns/odrl.jsonld",
+  "@type": "Set",
+  "uid": "http://example.com/policy/26",
+  "permission": [
+    {
+      "uid": "http://example.com/policy/26/permission/1",
+      "target": "http://example.com/scientific-data/7890",
+      "assigner": "http://example.com/org/research-lab",
+      "action": "use",
+      "constraint": [
+        {
+          "@id": "http://example.com/constraint/18",
+          "leftOperand": "researchEthicsApproval",
+          "operator": "eq",
+          "rightOperand": true
+        },
+        {
+          "@id": "http://example.com/constraint/19",
+          "leftOperand": "dataProcessingMethod",
+          "operator": "in",
+          "rightOperand": [
+            "statistical-analysis",
+            "machine-learning",
+            "predictive-modeling"
+          ]
+        }
+      ]
+    }
+  ]
+}
