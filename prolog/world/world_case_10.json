@@ -1,0 +1,8 @@
+{
+  "world": {
+    "currentResearchContext": {
+      "researchEthicsApproval": true,
+      "dataProcessingMethod": "machine-learning"
+    }
+  }
+}
