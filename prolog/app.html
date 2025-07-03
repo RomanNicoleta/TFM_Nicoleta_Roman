@@ -24,7 +24,7 @@
             margin: 0 auto;
             padding: 20px;
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 400px 1fr;
             gap: 20px;
             min-height: 100vh;
         }
@@ -52,30 +52,99 @@
             margin-bottom: 25px;
         }
 
-        .choice, .world-choice {
-            display: block;
+        .dropdown {
+            position: relative;
             width: 100%;
-            margin: 8px 0;
+            margin-bottom: 15px;
+        }
+
+        .dropdown-button {
+            width: 100%;
             padding: 12px 15px;
             background: #f7fafc;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
             font-size: 14px;
             text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
         }
 
-        .choice:hover, .world-choice:hover {
+        .dropdown-button:hover {
             background: #edf2f7;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e0;
         }
 
-        .choice.selected, .world-choice.selected {
+        .dropdown-button.active {
             background: #4299e1;
             color: white;
             border-color: #3182ce;
+        }
+
+        .dropdown-arrow {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-button.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .dropdown-content.open {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .dropdown-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: #f8fafc;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item.selected {
+            background: #e6fffa;
+            color: #234e52;
+            font-weight: 600;
+        }
+
+        .category-label {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .policy-description {
+            font-size: 11px;
+            color: #718096;
+            margin-top: 2px;
         }
 
         .generate-btn {
@@ -200,6 +269,11 @@
             color: #742a2a;
         }
 
+        .disabled-section {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
         @media (max-width: 768px) {
             .container {
                 grid-template-columns: 1fr;
@@ -218,23 +292,52 @@
         <div class="sidebar">
             <div class="policy-section">
                 <h3>📋 Choose Policy</h3>
-                <button class="choice" onclick="loadPolicy('policy1')">Policy 1 - Time-based Access</button>
-                <button class="choice" onclick="loadPolicy('policy2')">Policy 2 - Role-based Access</button>
-                <button class="choice" onclick="loadPolicy('policy3')">Policy 3 - Geographic Access</button>
+                <div class="dropdown">
+                    <button class="dropdown-button" id="policy-dropdown-btn" onclick="toggleDropdown('policy')">
+                        <span>Select a policy...</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    <div class="dropdown-content" id="policy-dropdown">
+                        <div class="dropdown-item" onclick="selectPolicy('time-based')">
+                            <div class="category-label">Time-Based Constraints</div>
+                            <div>Policy Category 1</div>
+                            <div class="policy-description">Access control based on date and time</div>
+                        </div>
+                        <div class="dropdown-item" onclick="selectPolicy('role-based')">
+                            <div class="category-label">Role-Based Constraints</div>
+                            <div>Policy Category 2</div>
+                            <div class="policy-description">Access control based on user roles</div>
+                        </div>
+                        <div class="dropdown-item" onclick="selectPolicy('geographical')">
+                            <div class="category-label">Geographical Constraints</div>
+                            <div>Policy Category 3</div>
+                            <div class="policy-description">Access control based on location and organization</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="world-section">
+            <div class="world-section" id="world-section">
                 <h3>🌍 Choose World Context</h3>
-                <button class="world-choice" onclick="loadWorld('world1')">World 1 - Current Time</button>
-                <button class="world-choice" onclick="loadWorld('world2')">World 2 - Different User</button>
-                <button class="world-choice" onclick="loadWorld('world3')">World 3 - Different Location</button>
+                <div class="dropdown">
+                    <button class="dropdown-button disabled" id="world-dropdown-btn" onclick="toggleDropdown('world')">
+                        <span>Select policy category first...</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    <div class="dropdown-content" id="world-dropdown">
+                        <!-- Dynamic content based on selected policy -->
+                    </div>
+                </div>
             </div>
 
             <div class="request-section">
                 <h3>🎯 Request Details</h3>
                 <div class="input-group">
-                    <input type="text" id="action-input" placeholder="Action (e.g., access, use, distribute)" value="access">
-                    <input type="text" id="target-input" placeholder="Target URI" value="http://example.com/document/1234">
+                    <input type="text" id="action-input" placeholder="Action" readonly>
+                    <input type="text" id="target-input" placeholder="Target URI" readonly>
+                </div>
+                <div style="font-size: 12px; color: #718096; margin-top: 5px;">
+                    Action and target are automatically set based on your selection
                 </div>
             </div>
 
@@ -268,81 +371,431 @@
     <script>
         const API_BASE_URL = 'http://localhost:8080/api';
         
-        // Sample policies and worlds
-        const policies = {
-            policy1: {
-                "@context": "http://www.w3.org/ns/odrl.jsonld",
-                "@type": "Set",
-                "uid": "http://example.com/policy/1",
-                "permission": [{
-                    "target": "http://example.com/document/1234",
-                    "action": "access",
-                    "constraint": [{
-                        "leftOperand": "dateTime",
-                        "operator": "lt",
-                        "rightOperand": {"@value": "2025-12-31", "@type": "xsd:date"}
-                    }]
-                }]
+        // Policy data organized by category
+        const policyData = {
+            'time-based': {
+                policies: [
+                    {
+                        id: 'policy_case_1',
+                        name: 'Policy 1 - Document Access (Time Range)',
+                        description: 'Access allowed between 2025-01-01 and 2025-12-31',
+                        action: 'access',
+                        target: 'http://example.com/document/5678',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/16",
+                            "permission": [{
+                                "uid": "http://example.com/policy/16/permission/1",
+                                "target": "http://example.com/document/5678",
+                                "assigner": "http://example.com/party/41",
+                                "action": "access",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/4",
+                                    "leftOperand": "dateTime",
+                                    "operator": "gteq",
+                                    "rightOperand": {
+                                        "@value": "2025-01-01T00:00:00Z",
+                                        "@type": "xsd:dateTime"
+                                    }
+                                }, {
+                                    "@id": "http://example.com/constraint/5",
+                                    "leftOperand": "dateTime",
+                                    "operator": "lteq",
+                                    "rightOperand": {
+                                        "@value": "2025-12-31T23:59:59Z",
+                                        "@type": "xsd:dateTime"
+                                    }
+                                }]
+                            }]
+                        }
+                    },
+                    {
+                        id: 'policy_case_2',
+                        name: 'Policy 2 - Data Use (Before Date)',
+                        description: 'Use allowed before 2025-03-01',
+                        action: 'use',
+                        target: 'http://example.com/data/9012',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/17",
+                            "permission": [{
+                                "uid": "http://example.com/policy/17/permission/1",
+                                "target": "http://example.com/data/9012",
+                                "assigner": "http://example.com/party/52",
+                                "action": "use",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/6",
+                                    "leftOperand": "dateTime",
+                                    "operator": "lt",
+                                    "rightOperand": {
+                                        "@value": "2025-03-01T00:00:00Z",
+                                        "@type": "xsd:dateTime"
+                                    }
+                                }]
+                            }]
+                        }
+                    },
+                    {
+                        id: 'policy_case_3',
+                        name: 'Policy 3 - Resource Distribution (After Date)',
+                        description: 'Distribution allowed after 2026-01-01',
+                        action: 'distribute',
+                        target: 'http://example.com/resource/3456',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/18",
+                            "permission": [{
+                                "uid": "http://example.com/policy/18/permission/1",
+                                "target": "http://example.com/resource/3456",
+                                "assigner": "http://example.com/party/63",
+                                "action": "distribute",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/7",
+                                    "leftOperand": "dateTime",
+                                    "operator": "gt",
+                                    "rightOperand": {
+                                        "@value": "2026-01-01T00:00:00Z",
+                                        "@type": "xsd:dateTime"
+                                    }
+                                }]
+                            }]
+                        }
+                    }
+                ],
+                worlds: [
+                    {
+                        id: 'world_case_1',
+                        name: 'World 1 - March 25, 2025 (10:30 AM)',
+                        description: 'Current time within 2025 range',
+                        data: {
+                            "world": {
+                                "currentTime": {
+                                    "dateTime": "2025-03-25T10:30:00Z"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        id: 'world_case_2',
+                        name: 'World 2 - March 25, 2025 (2:45 PM)',
+                        description: 'Current time after March 1 deadline',
+                        data: {
+                            "world": {
+                                "currentTime": {
+                                    "dateTime": "2025-03-25T14:45:00Z"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        id: 'world_case_3',
+                        name: 'World 3 - March 25, 2025 (9:15 AM)',
+                        description: 'Current time before 2026 distribution date',
+                        data: {
+                            "world": {
+                                "currentTime": {
+                                    "dateTime": "2025-03-25T09:15:00Z"
+                                }
+                            }
+                        }
+                    }
+                ]
             },
-            policy2: {
-                "@context": "http://www.w3.org/ns/odrl.jsonld",
-                "@type": "Set",
-                "uid": "http://example.com/policy/2",
-                "permission": [{
-                    "target": "http://example.com/document/1234",
-                    "action": "access",
-                    "constraint": [{
-                        "leftOperand": "role",
-                        "operator": "isPartOf",
-                        "rightOperand": ["admin", "manager"]
-                    }]
-                }]
+            'role-based': {
+                policies: [
+                    {
+                        id: 'policy_case_4',
+                        name: 'Policy 4 - Confidential Report Access',
+                        description: 'Access for cybersecurity experts only',
+                        action: 'access',
+                        target: 'http://example.com/confidential-report/7890',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/19",
+                            "permission": [{
+                                "uid": "http://example.com/policy/19/permission/1",
+                                "target": "http://example.com/confidential-report/7890",
+                                "assigner": "http://example.com/org/security-department",
+                                "action": "access",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/8",
+                                    "leftOperand": "role",
+                                    "operator": "isPartOf",
+                                    "rightOperand": "cybersecurity-expert"
+                                }]
+                            }]
+                        }
+                    },
+                    {
+                        id: 'policy_case_5',
+                        name: 'Policy 5 - Financial Data Modification',
+                        description: 'Modification rights for senior managers only',
+                        action: 'modify',
+                        target: 'http://example.com/financial-data/2345',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/20",
+                            "permission": [{
+                                "uid": "http://example.com/policy/20/permission/1",
+                                "target": "http://example.com/financial-data/2345",
+                                "assigner": "http://example.com/org/finance-department",
+                                "action": "modify",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/9",
+                                    "leftOperand": "role",
+                                    "operator": "isPartOf",
+                                    "rightOperand": "senior-manager"
+                                }]
+                            }]
+                        }
+                    },
+                    {
+                        id: 'policy_case_6',
+                        name: 'Policy 6 - HR Records View',
+                        description: 'View rights for HR managers and legal counsel',
+                        action: 'view',
+                        target: 'http://example.com/hr-records/6789',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/21",
+                            "permission": [{
+                                "uid": "http://example.com/policy/21/permission/1",
+                                "target": "http://example.com/hr-records/6789",
+                                "assigner": "http://example.com/org/human-resources",
+                                "action": "view",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/10",
+                                    "leftOperand": "role",
+                                    "operator": "isPartOf",
+                                    "rightOperand": ["hr-manager", "legal-counsel"]
+                                }]
+                            }]
+                        }
+                    }
+                ],
+                worlds: [
+                    {
+                        id: 'world_case_4',
+                        name: 'World 4 - Cybersecurity Expert',
+                        description: 'User with cybersecurity expert role',
+                        data: {
+                            "world": {
+                                "currentUserRole": "cybersecurity-expert"
+                            }
+                        }
+                    },
+                    {
+                        id: 'world_case_5',
+                        name: 'World 5 - Junior Analyst',
+                        description: 'User with junior analyst role',
+                        data: {
+                            "world": {
+                                "currentUserRole": "junior-analyst"
+                            }
+                        }
+                    },
+                    {
+                        id: 'world_case_6',
+                        name: 'World 6 - HR Manager',
+                        description: 'User with HR manager role',
+                        data: {
+                            "world": {
+                                "currentUserRole": "hr-manager"
+                            }
+                        }
+                    }
+                ]
             },
-            policy3: {
-                "@context": "http://www.w3.org/ns/odrl.jsonld",
-                "@type": "Set",
-                "uid": "http://example.com/policy/3",
-                "permission": [{
-                    "target": "http://example.com/document/1234",
-                    "action": "access",
-                    "constraint": [{
-                        "leftOperand": "country",
-                        "operator": "in",
-                        "rightOperand": ["US", "CA", "GB"]
-                    }]
-                }]
+            'geographical': {
+                policies: [
+                    {
+                        id: 'policy_case_7',
+                        name: 'Policy 7 - Research Data Access',
+                        description: 'Access from US, CA, or GB only',
+                        action: 'access',
+                        target: 'http://example.com/research-data/1234',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/22",
+                            "permission": [{
+                                "uid": "http://example.com/policy/22/permission/1",
+                                "target": "http://example.com/research-data/1234",
+                                "assigner": "http://example.com/org/research-institute",
+                                "action": "access",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/11",
+                                    "leftOperand": "country",
+                                    "operator": "in",
+                                    "rightOperand": [
+                                        "https://schema.org/Country/US",
+                                        "https://schema.org/Country/CA",
+                                        "https://schema.org/Country/GB"
+                                    ]
+                                }]
+                            }]
+                        }
+                    },
+                    {
+                        id: 'policy_case_8',
+                        name: 'Policy 8 - Strategic Documents View',
+                        description: 'TechInnovate org, not from CN or RU',
+                        action: 'view',
+                        target: 'http://example.com/strategic-documents/5678',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/23",
+                            "permission": [{
+                                "uid": "http://example.com/policy/23/permission/1",
+                                "target": "http://example.com/strategic-documents/5678",
+                                "assigner": "http://example.com/org/global-corp",
+                                "action": "view",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/12",
+                                    "leftOperand": "organization",
+                                    "operator": "eq",
+                                    "rightOperand": "http://example.com/company/TechInnovate"
+                                }, {
+                                    "@id": "http://example.com/constraint/13",
+                                    "leftOperand": "country",
+                                    "operator": "notIn",
+                                    "rightOperand": [
+                                        "https://schema.org/Country/CN",
+                                        "https://schema.org/Country/RU"
+                                    ]
+                                }]
+                            }]
+                        }
+                    },
+                    {
+                        id: 'policy_case_9',
+                        name: 'Policy 9 - Sensitive Data Access',
+                        description: 'Japan only, not TechNewYork org',
+                        action: 'access',
+                        target: 'http://example.com/sensitive-data/9012',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/24",
+                            "permission": [{
+                                "uid": "http://example.com/policy/24/permission/1",
+                                "target": "http://example.com/sensitive-data/9012",
+                                "assigner": "http://example.com/org/global-security",
+                                "action": "access",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/14",
+                                    "leftOperand": "country",
+                                    "operator": "in",
+                                    "rightOperand": ["https://schema.org/Country/JP"]
+                                }, {
+                                    "@id": "http://example.com/constraint/15",
+                                    "leftOperand": "organization",
+                                    "operator": "notEq",
+                                    "rightOperand": "http://example.com/company/TechNewYork"
+                                }]
+                            }]
+                        }
+                    },
+                    {
+                        id: 'policy_case_10',
+                        name: 'Policy 10 - Scientific Data Use',
+                        description: 'Research ethics approval + specific methods',
+                        action: 'use',
+                        target: 'http://example.com/scientific-data/7890',
+                        data: {
+                            "@context": "http://www.w3.org/ns/odrl.jsonld",
+                            "@type": "Set",
+                            "uid": "http://example.com/policy/26",
+                            "permission": [{
+                                "uid": "http://example.com/policy/26/permission/1",
+                                "target": "http://example.com/scientific-data/7890",
+                                "assigner": "http://example.com/org/research-lab",
+                                "action": "use",
+                                "constraint": [{
+                                    "@id": "http://example.com/constraint/18",
+                                    "leftOperand": "researchEthicsApproval",
+                                    "operator": "eq",
+                                    "rightOperand": true
+                                }, {
+                                    "@id": "http://example.com/constraint/19",
+                                    "leftOperand": "dataProcessingMethod",
+                                    "operator": "in",
+                                    "rightOperand": [
+                                        "statistical-analysis",
+                                        "machine-learning",
+                                        "predictive-modeling"
+                                    ]
+                                }]
+                            }]
+                        }
+                    }
+                ],
+                worlds: [
+                    {
+                        id: 'world_case_7',
+                        name: 'World 7 - US Location',
+                        description: 'User located in United States',
+                        data: {
+                            "world": {
+                                "currentUserLocation": {
+                                    "country": "https://schema.org/Country/US"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        id: 'world_case_8',
+                        name: 'World 8 - TechInnovate Germany',
+                        description: 'TechInnovate organization, Germany location',
+                        data: {
+                            "world": {
+                                "currentUserOrganization": "http://example.com/company/TechInnovate",
+                                "currentUserLocation": {
+                                    "country": "https://schema.org/Country/DE"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        id: 'world_case_9',
+                        name: 'World 9 - TechNewYork Korea',
+                        description: 'TechNewYork organization, South Korea location',
+                        data: {
+                            "world": {
+                                "currentUserLocation": {
+                                    "country": "https://schema.org/Country/KR"
+                                },
+                                "currentUserOrganization": "http://example.com/company/TechNewYork"
+                            }
+                        }
+                    },
+                    {
+                        id: 'world_case_10',
+                        name: 'World 10 - Research Context',
+                        description: 'Research ethics approved, ML processing',
+                        data: {
+                            "world": {
+                                "currentResearchContext": {
+                                    "researchEthicsApproval": true,
+                                    "dataProcessingMethod": "machine-learning"
+                                }
+                            }
+                        }
+                    }
+                ]
             }
         };
 
-        const worlds = {
-            world1: {
-                "world": {
-                    "currentTime": {"dateTime": "2025-01-01T10:00:00Z"},
-                    "currentUserRole": "admin",
-                    "currentUserLocation": {"country": "US"},
-                    "currentUserOrganization": "ExampleCorp"
-                }
-            },
-            world2: {
-                "world": {
-                    "currentTime": {"dateTime": "2025-01-01T10:00:00Z"},
-                    "currentUserRole": "user",
-                    "currentUserLocation": {"country": "US"},
-                    "currentUserOrganization": "ExampleCorp"
-                }
-            },
-            world3: {
-                "world": {
-                    "currentTime": {"dateTime": "2025-01-01T10:00:00Z"},
-                    "currentUserRole": "admin",
-                    "currentUserLocation": {"country": "FR"},
-                    "currentUserOrganization": "ExampleCorp"
-                }
-            }
-        };
-
-        let selectedPolicy = null;
-        let selectedWorld = null;
+        let selectedCategory = null;
+        let selectedPolicyId = null;
+        let selectedWorldId = null;
 
         // Check server status
         async function checkServerStatus() {
