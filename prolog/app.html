@@ -274,6 +274,20 @@
             pointer-events: none;
         }
 
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 grid-template-columns: 1fr;
@@ -293,39 +307,25 @@
             <div class="policy-section">
                 <h3>📋 Choose Policy</h3>
                 <div class="dropdown">
-                    <button class="dropdown-button" id="policy-dropdown-btn" onclick="toggleDropdown('policy')">
+                    <button class="dropdown-button" id="policy-dropdown-btn">
                         <span>Select a policy...</span>
                         <span class="dropdown-arrow">▼</span>
                     </button>
                     <div class="dropdown-content" id="policy-dropdown">
-                        <div class="dropdown-item" onclick="selectPolicy('time-based')">
-                            <div class="category-label">Time-Based Constraints</div>
-                            <div>Policy Category 1</div>
-                            <div class="policy-description">Access control based on date and time</div>
-                        </div>
-                        <div class="dropdown-item" onclick="selectPolicy('role-based')">
-                            <div class="category-label">Role-Based Constraints</div>
-                            <div>Policy Category 2</div>
-                            <div class="policy-description">Access control based on user roles</div>
-                        </div>
-                        <div class="dropdown-item" onclick="selectPolicy('geographical')">
-                            <div class="category-label">Geographical Constraints</div>
-                            <div>Policy Category 3</div>
-                            <div class="policy-description">Access control based on location and organization</div>
-                        </div>
+                        <!-- Dynamic content loaded from files -->
                     </div>
                 </div>
             </div>
 
-            <div class="world-section" id="world-section">
+            <div class="world-section">
                 <h3>🌍 Choose World Context</h3>
                 <div class="dropdown">
-                    <button class="dropdown-button disabled" id="world-dropdown-btn" onclick="toggleDropdown('world')">
-                        <span>Select policy category first...</span>
+                    <button class="dropdown-button" id="world-dropdown-btn">
+                        <span>Select a world context...</span>
                         <span class="dropdown-arrow">▼</span>
                     </button>
                     <div class="dropdown-content" id="world-dropdown">
-                        <!-- Dynamic content based on selected policy -->
+                        <!-- Dynamic content loaded from files -->
                     </div>
                 </div>
             </div>
@@ -333,15 +333,15 @@
             <div class="request-section">
                 <h3>🎯 Request Details</h3>
                 <div class="input-group">
-                    <input type="text" id="action-input" placeholder="Action" readonly>
-                    <input type="text" id="target-input" placeholder="Target URI" readonly>
+                    <input type="text" id="action-input" placeholder="Action">
+                    <input type="text" id="target-input" placeholder="Target URI">
                 </div>
                 <div style="font-size: 12px; color: #718096; margin-top: 5px;">
-                    Action and target are automatically set based on your selection
+                    Enter the action and target for evaluation
                 </div>
             </div>
 
-            <button class="generate-btn" onclick="evaluatePolicy()" id="evaluate-btn">
+            <button class="generate-btn" onclick="evaluatePolicy()" id="evaluate-btn" disabled>
                 🚀 Evaluate Policy
             </button>
         </div>
@@ -371,431 +371,197 @@
     <script>
         const API_BASE_URL = 'http://localhost:8080/api';
         
-        // Policy data organized by category
-        const policyData = {
-            'time-based': {
-                policies: [
-                    {
-                        id: 'policy_case_1',
-                        name: 'Policy 1 - Document Access (Time Range)',
-                        description: 'Access allowed between 2025-01-01 and 2025-12-31',
-                        action: 'access',
-                        target: 'http://example.com/document/5678',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/16",
-                            "permission": [{
-                                "uid": "http://example.com/policy/16/permission/1",
-                                "target": "http://example.com/document/5678",
-                                "assigner": "http://example.com/party/41",
-                                "action": "access",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/4",
-                                    "leftOperand": "dateTime",
-                                    "operator": "gteq",
-                                    "rightOperand": {
-                                        "@value": "2025-01-01T00:00:00Z",
-                                        "@type": "xsd:dateTime"
-                                    }
-                                }, {
-                                    "@id": "http://example.com/constraint/5",
-                                    "leftOperand": "dateTime",
-                                    "operator": "lteq",
-                                    "rightOperand": {
-                                        "@value": "2025-12-31T23:59:59Z",
-                                        "@type": "xsd:dateTime"
-                                    }
-                                }]
-                            }]
-                        }
-                    },
-                    {
-                        id: 'policy_case_2',
-                        name: 'Policy 2 - Data Use (Before Date)',
-                        description: 'Use allowed before 2025-03-01',
-                        action: 'use',
-                        target: 'http://example.com/data/9012',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/17",
-                            "permission": [{
-                                "uid": "http://example.com/policy/17/permission/1",
-                                "target": "http://example.com/data/9012",
-                                "assigner": "http://example.com/party/52",
-                                "action": "use",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/6",
-                                    "leftOperand": "dateTime",
-                                    "operator": "lt",
-                                    "rightOperand": {
-                                        "@value": "2025-03-01T00:00:00Z",
-                                        "@type": "xsd:dateTime"
-                                    }
-                                }]
-                            }]
-                        }
-                    },
-                    {
-                        id: 'policy_case_3',
-                        name: 'Policy 3 - Resource Distribution (After Date)',
-                        description: 'Distribution allowed after 2026-01-01',
-                        action: 'distribute',
-                        target: 'http://example.com/resource/3456',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/18",
-                            "permission": [{
-                                "uid": "http://example.com/policy/18/permission/1",
-                                "target": "http://example.com/resource/3456",
-                                "assigner": "http://example.com/party/63",
-                                "action": "distribute",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/7",
-                                    "leftOperand": "dateTime",
-                                    "operator": "gt",
-                                    "rightOperand": {
-                                        "@value": "2026-01-01T00:00:00Z",
-                                        "@type": "xsd:dateTime"
-                                    }
-                                }]
-                            }]
-                        }
-                    }
-                ],
-                worlds: [
-                    {
-                        id: 'world_case_1',
-                        name: 'World 1 - March 25, 2025 (10:30 AM)',
-                        description: 'Current time within 2025 range',
-                        data: {
-                            "world": {
-                                "currentTime": {
-                                    "dateTime": "2025-03-25T10:30:00Z"
-                                }
-                            }
-                        }
-                    },
-                    {
-                        id: 'world_case_2',
-                        name: 'World 2 - March 25, 2025 (2:45 PM)',
-                        description: 'Current time after March 1 deadline',
-                        data: {
-                            "world": {
-                                "currentTime": {
-                                    "dateTime": "2025-03-25T14:45:00Z"
-                                }
-                            }
-                        }
-                    },
-                    {
-                        id: 'world_case_3',
-                        name: 'World 3 - March 25, 2025 (9:15 AM)',
-                        description: 'Current time before 2026 distribution date',
-                        data: {
-                            "world": {
-                                "currentTime": {
-                                    "dateTime": "2025-03-25T09:15:00Z"
-                                }
-                            }
-                        }
-                    }
-                ]
-            },
-            'role-based': {
-                policies: [
-                    {
-                        id: 'policy_case_4',
-                        name: 'Policy 4 - Confidential Report Access',
-                        description: 'Access for cybersecurity experts only',
-                        action: 'access',
-                        target: 'http://example.com/confidential-report/7890',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/19",
-                            "permission": [{
-                                "uid": "http://example.com/policy/19/permission/1",
-                                "target": "http://example.com/confidential-report/7890",
-                                "assigner": "http://example.com/org/security-department",
-                                "action": "access",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/8",
-                                    "leftOperand": "role",
-                                    "operator": "isPartOf",
-                                    "rightOperand": "cybersecurity-expert"
-                                }]
-                            }]
-                        }
-                    },
-                    {
-                        id: 'policy_case_5',
-                        name: 'Policy 5 - Financial Data Modification',
-                        description: 'Modification rights for senior managers only',
-                        action: 'modify',
-                        target: 'http://example.com/financial-data/2345',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/20",
-                            "permission": [{
-                                "uid": "http://example.com/policy/20/permission/1",
-                                "target": "http://example.com/financial-data/2345",
-                                "assigner": "http://example.com/org/finance-department",
-                                "action": "modify",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/9",
-                                    "leftOperand": "role",
-                                    "operator": "isPartOf",
-                                    "rightOperand": "senior-manager"
-                                }]
-                            }]
-                        }
-                    },
-                    {
-                        id: 'policy_case_6',
-                        name: 'Policy 6 - HR Records View',
-                        description: 'View rights for HR managers and legal counsel',
-                        action: 'view',
-                        target: 'http://example.com/hr-records/6789',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/21",
-                            "permission": [{
-                                "uid": "http://example.com/policy/21/permission/1",
-                                "target": "http://example.com/hr-records/6789",
-                                "assigner": "http://example.com/org/human-resources",
-                                "action": "view",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/10",
-                                    "leftOperand": "role",
-                                    "operator": "isPartOf",
-                                    "rightOperand": ["hr-manager", "legal-counsel"]
-                                }]
-                            }]
-                        }
-                    }
-                ],
-                worlds: [
-                    {
-                        id: 'world_case_4',
-                        name: 'World 4 - Cybersecurity Expert',
-                        description: 'User with cybersecurity expert role',
-                        data: {
-                            "world": {
-                                "currentUserRole": "cybersecurity-expert"
-                            }
-                        }
-                    },
-                    {
-                        id: 'world_case_5',
-                        name: 'World 5 - Junior Analyst',
-                        description: 'User with junior analyst role',
-                        data: {
-                            "world": {
-                                "currentUserRole": "junior-analyst"
-                            }
-                        }
-                    },
-                    {
-                        id: 'world_case_6',
-                        name: 'World 6 - HR Manager',
-                        description: 'User with HR manager role',
-                        data: {
-                            "world": {
-                                "currentUserRole": "hr-manager"
-                            }
-                        }
-                    }
-                ]
-            },
-            'geographical': {
-                policies: [
-                    {
-                        id: 'policy_case_7',
-                        name: 'Policy 7 - Research Data Access',
-                        description: 'Access from US, CA, or GB only',
-                        action: 'access',
-                        target: 'http://example.com/research-data/1234',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/22",
-                            "permission": [{
-                                "uid": "http://example.com/policy/22/permission/1",
-                                "target": "http://example.com/research-data/1234",
-                                "assigner": "http://example.com/org/research-institute",
-                                "action": "access",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/11",
-                                    "leftOperand": "country",
-                                    "operator": "in",
-                                    "rightOperand": [
-                                        "https://schema.org/Country/US",
-                                        "https://schema.org/Country/CA",
-                                        "https://schema.org/Country/GB"
-                                    ]
-                                }]
-                            }]
-                        }
-                    },
-                    {
-                        id: 'policy_case_8',
-                        name: 'Policy 8 - Strategic Documents View',
-                        description: 'TechInnovate org, not from CN or RU',
-                        action: 'view',
-                        target: 'http://example.com/strategic-documents/5678',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/23",
-                            "permission": [{
-                                "uid": "http://example.com/policy/23/permission/1",
-                                "target": "http://example.com/strategic-documents/5678",
-                                "assigner": "http://example.com/org/global-corp",
-                                "action": "view",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/12",
-                                    "leftOperand": "organization",
-                                    "operator": "eq",
-                                    "rightOperand": "http://example.com/company/TechInnovate"
-                                }, {
-                                    "@id": "http://example.com/constraint/13",
-                                    "leftOperand": "country",
-                                    "operator": "notIn",
-                                    "rightOperand": [
-                                        "https://schema.org/Country/CN",
-                                        "https://schema.org/Country/RU"
-                                    ]
-                                }]
-                            }]
-                        }
-                    },
-                    {
-                        id: 'policy_case_9',
-                        name: 'Policy 9 - Sensitive Data Access',
-                        description: 'Japan only, not TechNewYork org',
-                        action: 'access',
-                        target: 'http://example.com/sensitive-data/9012',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/24",
-                            "permission": [{
-                                "uid": "http://example.com/policy/24/permission/1",
-                                "target": "http://example.com/sensitive-data/9012",
-                                "assigner": "http://example.com/org/global-security",
-                                "action": "access",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/14",
-                                    "leftOperand": "country",
-                                    "operator": "in",
-                                    "rightOperand": ["https://schema.org/Country/JP"]
-                                }, {
-                                    "@id": "http://example.com/constraint/15",
-                                    "leftOperand": "organization",
-                                    "operator": "notEq",
-                                    "rightOperand": "http://example.com/company/TechNewYork"
-                                }]
-                            }]
-                        }
-                    },
-                    {
-                        id: 'policy_case_10',
-                        name: 'Policy 10 - Scientific Data Use',
-                        description: 'Research ethics approval + specific methods',
-                        action: 'use',
-                        target: 'http://example.com/scientific-data/7890',
-                        data: {
-                            "@context": "http://www.w3.org/ns/odrl.jsonld",
-                            "@type": "Set",
-                            "uid": "http://example.com/policy/26",
-                            "permission": [{
-                                "uid": "http://example.com/policy/26/permission/1",
-                                "target": "http://example.com/scientific-data/7890",
-                                "assigner": "http://example.com/org/research-lab",
-                                "action": "use",
-                                "constraint": [{
-                                    "@id": "http://example.com/constraint/18",
-                                    "leftOperand": "researchEthicsApproval",
-                                    "operator": "eq",
-                                    "rightOperand": true
-                                }, {
-                                    "@id": "http://example.com/constraint/19",
-                                    "leftOperand": "dataProcessingMethod",
-                                    "operator": "in",
-                                    "rightOperand": [
-                                        "statistical-analysis",
-                                        "machine-learning",
-                                        "predictive-modeling"
-                                    ]
-                                }]
-                            }]
-                        }
-                    }
-                ],
-                worlds: [
-                    {
-                        id: 'world_case_7',
-                        name: 'World 7 - US Location',
-                        description: 'User located in United States',
-                        data: {
-                            "world": {
-                                "currentUserLocation": {
-                                    "country": "https://schema.org/Country/US"
-                                }
-                            }
-                        }
-                    },
-                    {
-                        id: 'world_case_8',
-                        name: 'World 8 - TechInnovate Germany',
-                        description: 'TechInnovate organization, Germany location',
-                        data: {
-                            "world": {
-                                "currentUserOrganization": "http://example.com/company/TechInnovate",
-                                "currentUserLocation": {
-                                    "country": "https://schema.org/Country/DE"
-                                }
-                            }
-                        }
-                    },
-                    {
-                        id: 'world_case_9',
-                        name: 'World 9 - TechNewYork Korea',
-                        description: 'TechNewYork organization, South Korea location',
-                        data: {
-                            "world": {
-                                "currentUserLocation": {
-                                    "country": "https://schema.org/Country/KR"
-                                },
-                                "currentUserOrganization": "http://example.com/company/TechNewYork"
-                            }
-                        }
-                    },
-                    {
-                        id: 'world_case_10',
-                        name: 'World 10 - Research Context',
-                        description: 'Research ethics approved, ML processing',
-                        data: {
-                            "world": {
-                                "currentResearchContext": {
-                                    "researchEthicsApproval": true,
-                                    "dataProcessingMethod": "machine-learning"
-                                }
-                            }
-                        }
-                    }
-                ]
-            }
-        };
-
-        let selectedCategory = null;
+        let policies = {};
+        let worlds = {};
         let selectedPolicyId = null;
         let selectedWorldId = null;
+        let selectedPolicy = null;
+        let selectedWorld = null;
+
+        
+
+        // Load policies from files
+        async function loadPolicies() {
+            const policyDropdown = document.getElementById('policy-dropdown');
+            policyDropdown.innerHTML = '<div class="dropdown-item">Loading policies...</div>';
+            
+            try {
+                // Try to load policy files from 1 to 20 (adjust range as needed)
+                for (let i = 1; i <= 20; i++) {
+                    try {
+                        const response = await fetch(`./policies/policy_case_${i}.json`);
+                        if (response.ok) {
+                            const policyData = await response.json();
+                            policies[`policy_case_${i}`] = policyData;
+                        }
+                    } catch (error) {
+                        // File doesn't exist, continue to next
+                        continue;
+                    }
+                }
+
+                // Populate dropdown
+                populatePolicyDropdown();
+            } catch (error) {
+                policyDropdown.innerHTML = '<div class="error-message">Error loading policies: ' + error.message + '</div>';
+            }
+        }
+
+        // Load worlds from files
+        async function loadWorlds() {
+            const worldDropdown = document.getElementById('world-dropdown');
+            worldDropdown.innerHTML = '<div class="dropdown-item">Loading world contexts...</div>';
+            
+            try {
+                // Try to load world files from 1 to 20 (adjust range as needed)
+                for (let i = 1; i <= 20; i++) {
+                    try {
+                        const response = await fetch(`./world/world_case_${i}.json`);
+                        if (response.ok) {
+                            const worldData = await response.json();
+                            worlds[`world_case_${i}`] = worldData;
+                        }
+                    } catch (error) {
+                        // File doesn't exist, continue to next
+                        continue;
+                    }
+                }
+
+                // Populate dropdown
+                populateWorldDropdown();
+            } catch (error) {
+                worldDropdown.innerHTML = '<div class="error-message">Error loading world contexts: ' + error.message + '</div>';
+            }
+        }
+
+        function populatePolicyDropdown() {
+            const policyDropdown = document.getElementById('policy-dropdown');
+            policyDropdown.innerHTML = '';
+
+            if (Object.keys(policies).length === 0) {
+                policyDropdown.innerHTML = '<div class="dropdown-item">No policies found</div>';
+                return;
+            }
+
+            Object.keys(policies).forEach(policyId => {
+                const policy = policies[policyId];
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                item.onclick = () => selectPolicy(policyId);
+                
+                // Extract policy name from the data or use the ID
+                const policyName = policy.uid || policy.id || policyId;
+                const policyDescription = policy.description || 'ODRL Policy';
+                
+                item.innerHTML = `
+                    <div class="category-label">Policy File</div>
+                    <div>${policyName}</div>
+                    <div class="policy-description">${policyDescription}</div>
+                `;
+                
+                policyDropdown.appendChild(item);
+            });
+        }
+
+        function populateWorldDropdown() {
+            const worldDropdown = document.getElementById('world-dropdown');
+            worldDropdown.innerHTML = '';
+
+            if (Object.keys(worlds).length === 0) {
+                worldDropdown.innerHTML = '<div class="dropdown-item">No world contexts found</div>';
+                return;
+            }
+
+            Object.keys(worlds).forEach(worldId => {
+                const world = worlds[worldId];
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                item.onclick = () => selectWorld(worldId);
+                
+                // Extract world name from the data or use the ID
+                const worldName = world.name || world.id || worldId;
+                const worldDescription = world.description || 'World Context';
+                
+                item.innerHTML = `
+                    <div class="category-label">World File</div>
+                    <div>${worldName}</div>
+                    <div class="policy-description">${worldDescription}</div>
+                `;
+                
+                worldDropdown.appendChild(item);
+            });
+        }
+
+        function selectPolicy(policyId) {
+            selectedPolicyId = policyId;
+            selectedPolicy = policies[policyId];
+            
+            // Update UI
+            document.querySelectorAll('#policy-dropdown .dropdown-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.closest('.dropdown-item').classList.add('selected');
+            
+            // Update dropdown button text
+            document.getElementById('policy-dropdown-btn').querySelector('span').textContent = policyId;
+            
+            // Display policy content
+            document.getElementById('policy-content').textContent = JSON.stringify(selectedPolicy, null, 2);
+            
+            // Close dropdown
+            document.getElementById('policy-dropdown').classList.remove('open');
+            document.getElementById('policy-dropdown-btn').classList.remove('active');
+            
+            // Extract action and target from policy if available
+            if (selectedPolicy.permission && selectedPolicy.permission[0]) {
+                const permission = selectedPolicy.permission[0];
+                if (permission.action) {
+                    document.getElementById('action-input').value = permission.action;
+                }
+                if (permission.target) {
+                    document.getElementById('target-input').value = permission.target;
+                }
+            }
+            
+            checkEvaluateButton();
+        }
+
+        function selectWorld(worldId) {
+            selectedWorldId = worldId;
+            selectedWorld = worlds[worldId];
+            
+            // Update UI
+            document.querySelectorAll('#world-dropdown .dropdown-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.closest('.dropdown-item').classList.add('selected');
+            
+            // Update dropdown button text
+            document.getElementById('world-dropdown-btn').querySelector('span').textContent = worldId;
+            
+            // Display world content
+            document.getElementById('world-content').textContent = JSON.stringify(selectedWorld, null, 2);
+            
+            // Close dropdown
+            document.getElementById('world-dropdown').classList.remove('open');
+            document.getElementById('world-dropdown-btn').classList.remove('active');
+            
+            checkEvaluateButton();
+        }
+
+        function checkEvaluateButton() {
+            const btn = document.getElementById('evaluate-btn');
+            const action = document.getElementById('action-input').value.trim();
+            const target = document.getElementById('target-input').value.trim();
+            
+            if (selectedPolicy && selectedWorld && action && target) {
+                btn.disabled = false;
+                btn.textContent = '🚀 Evaluate Policy';
+            } else {
+                btn.disabled = true;
+                btn.textContent = 'Select Policy, World & Fill Details';
+            }
+        }
 
         // Check server status
         async function checkServerStatus() {
@@ -810,41 +576,6 @@
             } catch (error) {
                 document.getElementById('status-indicator').textContent = 'Prolog Server Offline';
                 document.getElementById('status-indicator').className = 'status-indicator status-offline';
-            }
-        }
-
-        function loadPolicy(policyKey) {
-            selectedPolicy = policyKey;
-            const policy = policies[policyKey];
-            document.getElementById('policy-content').textContent = JSON.stringify(policy, null, 2);
-            
-            // Update UI
-            document.querySelectorAll('.choice').forEach(btn => btn.classList.remove('selected'));
-            event.target.classList.add('selected');
-            
-            checkEvaluateButton();
-        }
-
-        function loadWorld(worldKey) {
-            selectedWorld = worldKey;
-            const world = worlds[worldKey];
-            document.getElementById('world-content').textContent = JSON.stringify(world, null, 2);
-            
-            // Update UI
-            document.querySelectorAll('.world-choice').forEach(btn => btn.classList.remove('selected'));
-            event.target.classList.add('selected');
-            
-            checkEvaluateButton();
-        }
-
-        function checkEvaluateButton() {
-            const btn = document.getElementById('evaluate-btn');
-            if (selectedPolicy && selectedWorld) {
-                btn.disabled = false;
-                btn.textContent = '🚀 Evaluate Policy';
-            } else {
-                btn.disabled = true;
-                btn.textContent = 'Select Policy & World';
             }
         }
 
@@ -871,8 +602,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        policy: policies[selectedPolicy],
-                        world: worlds[selectedWorld],
+                        policy: selectedPolicy,
+                        world: selectedWorld,
                         action: action,
                         target: target
                     })
@@ -883,8 +614,7 @@
             } catch (error) {
                 displayResult({ success: false, message: error.message }, action, target);
             } finally {
-                btn.disabled = false;
-                btn.textContent = '🚀 Evaluate Policy';
+                checkEvaluateButton();
             }
         }
 
@@ -915,8 +645,8 @@
                 </div>
                 <div class="content-display">
                     <strong>Request:</strong> ${action} on ${target}
-                    <strong>Policy:</strong> ${selectedPolicy}
-                    <strong>World:</strong> ${selectedWorld}
+                    <strong>Policy:</strong> ${selectedPolicyId}
+                    <strong>World:</strong> ${selectedWorldId}
                     <strong>Result:</strong> ${JSON.stringify(result, null, 2)}
                 </div>
             `;
@@ -925,10 +655,52 @@
             resultCard.scrollIntoView({ behavior: 'smooth' });
         }
 
+        // Dropdown functionality
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-content').forEach(content => content.classList.remove('open'));
+                document.querySelectorAll('.dropdown-button').forEach(btn => btn.classList.remove('active'));
+            }
+        });
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             checkServerStatus();
-            checkEvaluateButton();
+            loadPolicies();
+            loadWorlds();
+            
+            // Add event listeners for dropdowns
+            document.getElementById('policy-dropdown-btn').addEventListener('click', function() {
+                const dropdownContent = document.getElementById('policy-dropdown');
+                const isOpen = dropdownContent.classList.contains('open');
+
+                // Close all dropdowns first
+                document.querySelectorAll('.dropdown-content').forEach(content => content.classList.remove('open'));
+                document.querySelectorAll('.dropdown-button').forEach(btn => btn.classList.remove('active'));
+
+                if (!isOpen) {
+                    dropdownContent.classList.add('open');
+                    this.classList.add('active');
+                }
+            });
+
+            document.getElementById('world-dropdown-btn').addEventListener('click', function() {
+                const dropdownContent = document.getElementById('world-dropdown');
+                const isOpen = dropdownContent.classList.contains('open');
+
+                // Close all dropdowns first
+                document.querySelectorAll('.dropdown-content').forEach(content => content.classList.remove('open'));
+                document.querySelectorAll('.dropdown-button').forEach(btn => btn.classList.remove('active'));
+
+                if (!isOpen) {
+                    dropdownContent.classList.add('open');
+                    this.classList.add('active');
+                }
+            });
+
+            // Add event listeners for input changes
+            document.getElementById('action-input').addEventListener('input', checkEvaluateButton);
+            document.getElementById('target-input').addEventListener('input', checkEvaluateButton);
             
             // Check server status periodically
             setInterval(checkServerStatus, 30000);
