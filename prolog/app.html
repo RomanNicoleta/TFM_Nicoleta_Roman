@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ODRL Policy Evaluator - Prolog Engine</title>
+    <title>ODRL Policy Evaluator - Enhanced with Custom Editor</title>
     <style>
         /* General Reset */
         * {
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             padding: 20px;
             display: grid;
@@ -50,6 +50,34 @@
 
         .policy-section, .world-section, .request-section {
             margin-bottom: 25px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 15px;
+        }
+
+        .mode-button {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            color: #718096;
+        }
+
+        .mode-button.active {
+            background: #4299e1;
+            color: white;
+            box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
         }
 
         .dropdown {
@@ -145,6 +173,77 @@
             font-size: 11px;
             color: #718096;
             margin-top: 2px;
+        }
+
+        .custom-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            background: #2d3748;
+            color: #e2e8f0;
+            border: 2px solid #4a5568;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .custom-editor:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .custom-editor::placeholder {
+            color: #a0aec0;
+        }
+
+        .editor-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .editor-section {
+            margin-bottom: 20px;
+        }
+
+        .validate-button {
+            width: 100%;
+            padding: 8px 12px;
+            background: #805ad5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .validate-button:hover {
+            background: #6b46c1;
+        }
+
+        .validation-result {
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .validation-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .validation-error {
+            background: #fed7d7;
+            color: #742a2a;
         }
 
         .generate-btn {
@@ -274,6 +373,10 @@
             pointer-events: none;
         }
 
+        .hidden {
+            display: none !important;
+        }
+
         .loading {
             opacity: 0.7;
             pointer-events: none;
@@ -305,27 +408,93 @@
     <div class="container">
         <div class="sidebar">
             <div class="policy-section">
-                <h3>📋 Choose Policy</h3>
-                <div class="dropdown">
-                    <button class="dropdown-button" id="policy-dropdown-btn">
-                        <span>Select a policy...</span>
-                        <span class="dropdown-arrow">▼</span>
-                    </button>
-                    <div class="dropdown-content" id="policy-dropdown">
-                        <!-- Dynamic content loaded from files -->
+                <h3>📋 Policy Configuration</h3>
+                
+                <div class="mode-toggle">
+                    <button class="mode-button active" onclick="switchMode('policy', 'predefined')">Predefined</button>
+                    <button class="mode-button" onclick="switchMode('policy', 'custom')">Custom</button>
+                </div>
+
+                <div id="policy-predefined-section">
+                    <div class="dropdown">
+                        <button class="dropdown-button" id="policy-dropdown-btn">
+                            <span>Select a policy...</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="dropdown-content" id="policy-dropdown">
+                            <!-- Dynamic content loaded from files -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="policy-custom-section" class="hidden">
+                    <div class="editor-section">
+                        <label class="editor-label">Policy JSON:</label>
+                        <textarea class="custom-editor" id="custom-policy-editor" placeholder='Enter your ODRL policy JSON here...
+
+Example:
+{
+  "@context": "http://www.w3.org/ns/odrl/2/",
+  "@type": "Set",
+  "uid": "http://example.com/policy/1234",
+  "permission": [{
+    "target": "http://example.com/document/5678",
+    "action": "access",
+    "constraint": [{
+      "leftOperand": "dateTime",
+      "operator": "lt",
+      "rightOperand": "2024-12-31T23:59:59"
+    }]
+  }]
+}'></textarea>
+                        <button class="validate-button" onclick="validateJSON('policy')">Validate JSON</button>
+                        <div id="policy-validation-result"></div>
                     </div>
                 </div>
             </div>
 
             <div class="world-section">
-                <h3>🌍 Choose World Context</h3>
-                <div class="dropdown">
-                    <button class="dropdown-button" id="world-dropdown-btn">
-                        <span>Select a world context...</span>
-                        <span class="dropdown-arrow">▼</span>
-                    </button>
-                    <div class="dropdown-content" id="world-dropdown">
-                        <!-- Dynamic content loaded from files -->
+                <h3>🌍 World Configuration</h3>
+                
+                <div class="mode-toggle">
+                    <button class="mode-button active" onclick="switchMode('world', 'predefined')">Predefined</button>
+                    <button class="mode-button" onclick="switchMode('world', 'custom')">Custom</button>
+                </div>
+
+                <div id="world-predefined-section">
+                    <div class="dropdown">
+                        <button class="dropdown-button" id="world-dropdown-btn">
+                            <span>Select a world context...</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="dropdown-content" id="world-dropdown">
+                            <!-- Dynamic content loaded from files -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="world-custom-section" class="hidden">
+                    <div class="editor-section">
+                        <label class="editor-label">World State JSON:</label>
+                        <textarea class="custom-editor" id="custom-world-editor" placeholder='Enter your world state JSON here...
+
+Example:
+{
+  "currentTime": {
+    "dateTime": "2024-11-15T10:30:00"
+  },
+  "currentUserRole": "researcher",
+  "currentUserLocation": {
+    "country": "US"
+  },
+  "currentUserOrganization": "University of Example",
+  "currentResearchContext": {
+    "researchEthicsApproval": true,
+    "dataProcessingMethod": "anonymized"
+  }
+}'></textarea>
+                        <button class="validate-button" onclick="validateJSON('world')">Validate JSON</button>
+                        <div id="world-validation-result"></div>
                     </div>
                 </div>
             </div>
@@ -333,14 +502,16 @@
             <div class="request-section">
                 <h3>🎯 Request Details</h3>
                 <div class="input-group">
-                    <input type="text" id="action-input" placeholder="Action">
+                    <input type="text" id="action-input" placeholder="Action (e.g., access, use, modify)">
+                </div>
+                <div class="input-group">
                     <input type="text" id="target-input" placeholder="Target URI">
                 </div>
                 <div style="font-size: 12px; color: #718096; margin-top: 5px;">
                     Enter the action and target for evaluation
                 </div>
             </div>
-
+     
             <button class="generate-btn" onclick="evaluatePolicy()" id="evaluate-btn" disabled>
                 🚀 Evaluate Policy
             </button>
@@ -350,14 +521,14 @@
             <div class="content-card">
                 <h2>📄 Policy Content</h2>
                 <div id="policy-content" class="content-display">
-                    Select a policy to view its content.
+                    Select a policy or create a custom one to view its content.
                 </div>
             </div>
 
             <div class="content-card">
                 <h2>🌐 World Context</h2>
                 <div id="world-content" class="content-display">
-                    Select a world context to view its content.
+                    Select a world context or create a custom one to view its content.
                 </div>
             </div>
             
@@ -377,8 +548,94 @@
         let selectedWorldId = null;
         let selectedPolicy = null;
         let selectedWorld = null;
+        let policyMode = 'predefined';
+        let worldMode = 'predefined';
 
-        
+        // Switch between predefined and custom modes
+        function switchMode(type, mode) {
+            const buttons = document.querySelectorAll(`#${type === 'policy' ? 'policy-section' : 'world-section'} .mode-button`);
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (type === 'policy') {
+                policyMode = mode;
+                document.getElementById('policy-predefined-section').classList.toggle('hidden', mode === 'custom');
+                document.getElementById('policy-custom-section').classList.toggle('hidden', mode === 'predefined');
+                
+                if (mode === 'custom') {
+                    selectedPolicyId = null;
+                    selectedPolicy = null;
+                    updatePolicyContent();
+                }
+            } else {
+                worldMode = mode;
+                document.getElementById('world-predefined-section').classList.toggle('hidden', mode === 'custom');
+                document.getElementById('world-custom-section').classList.toggle('hidden', mode === 'predefined');
+                
+                if (mode === 'custom') {
+                    selectedWorldId = null;
+                    selectedWorld = null;
+                    updateWorldContent();
+                }
+            }
+            
+            checkEvaluateButton();
+        }
+
+        // Validate JSON input
+        function validateJSON(type) {
+            const editor = document.getElementById(`custom-${type}-editor`);
+            const resultDiv = document.getElementById(`${type}-validation-result`);
+            
+            try {
+                const json = JSON.parse(editor.value);
+                resultDiv.innerHTML = '<div class="validation-success">✓ Valid JSON</div>';
+                
+                if (type === 'policy') {
+                    selectedPolicy = json;
+                    updatePolicyContent();
+                } else {
+                    selectedWorld = json;
+                    updateWorldContent();
+                }
+                
+                checkEvaluateButton();
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="validation-error">✗ Invalid JSON: ${error.message}</div>`;
+                
+                if (type === 'policy') {
+                    selectedPolicy = null;
+                } else {
+                    selectedWorld = null;
+                }
+                
+                checkEvaluateButton();
+            }
+        }
+
+        // Update policy content display
+        function updatePolicyContent() {
+            const content = document.getElementById('policy-content');
+            if (selectedPolicy) {
+                content.textContent = JSON.stringify(selectedPolicy, null, 2);
+            } else if (policyMode === 'custom') {
+                content.textContent = 'Enter and validate your custom policy JSON.';
+            } else {
+                content.textContent = 'Select a policy to view its content.';
+            }
+        }
+
+        // Update world content display
+        function updateWorldContent() {
+            const content = document.getElementById('world-content');
+            if (selectedWorld) {
+                content.textContent = JSON.stringify(selectedWorld, null, 2);
+            } else if (worldMode === 'custom') {
+                content.textContent = 'Enter and validate your custom world state JSON.';
+            } else {
+                content.textContent = 'Select a world context to view its content.';
+            }
+        }
 
         // Load policies from files
         async function loadPolicies() {
@@ -387,7 +644,7 @@
             
             try {
                 // Try to load policy files from 1 to 20 (adjust range as needed)
-                for (let i = 1; i <= 20; i++) {
+                for (let i = 1; i <= 10; i++) {
                     try {
                         const response = await fetch(`./policies/policy_case_${i}.json`);
                         if (response.ok) {
@@ -414,7 +671,7 @@
             
             try {
                 // Try to load world files from 1 to 20 (adjust range as needed)
-                for (let i = 1; i <= 20; i++) {
+                for (let i = 1; i <= 10; i++) {
                     try {
                         const response = await fetch(`./world/world_case_${i}.json`);
                         if (response.ok) {
@@ -506,7 +763,7 @@
             document.getElementById('policy-dropdown-btn').querySelector('span').textContent = policyId;
             
             // Display policy content
-            document.getElementById('policy-content').textContent = JSON.stringify(selectedPolicy, null, 2);
+            updatePolicyContent();
             
             // Close dropdown
             document.getElementById('policy-dropdown').classList.remove('open');
@@ -540,7 +797,7 @@
             document.getElementById('world-dropdown-btn').querySelector('span').textContent = worldId;
             
             // Display world content
-            document.getElementById('world-content').textContent = JSON.stringify(selectedWorld, null, 2);
+            updateWorldContent();
             
             // Close dropdown
             document.getElementById('world-dropdown').classList.remove('open');
@@ -554,12 +811,17 @@
             const action = document.getElementById('action-input').value.trim();
             const target = document.getElementById('target-input').value.trim();
             
-            if (selectedPolicy && selectedWorld && action && target) {
+            const hasPolicyConfig = (policyMode === 'predefined' && selectedPolicy) || 
+                                   (policyMode === 'custom' && selectedPolicy);
+            const hasWorldConfig = (worldMode === 'predefined' && selectedWorld) || 
+                                  (worldMode === 'custom' && selectedWorld);
+            
+            if (hasPolicyConfig && hasWorldConfig && action && target) {
                 btn.disabled = false;
                 btn.textContent = '🚀 Evaluate Policy';
             } else {
                 btn.disabled = true;
-                btn.textContent = 'Select Policy, World & Fill Details';
+                btn.textContent = 'Configure Policy, World & Fill Details';
             }
         }
 
@@ -581,7 +843,7 @@
 
         async function evaluatePolicy() {
             if (!selectedPolicy || !selectedWorld) {
-                alert('Please select both a policy and a world context');
+                alert('Please configure both policy and world context');
                 return;
             }
 
@@ -639,72 +901,97 @@
                 resultText = `❌ ERROR: ${result.message || 'Unknown error'}`;
             }
             
+            const policySource = policyMode === 'predefined' ? selectedPolicyId : 'Custom Policy';
+            const worldSource = worldMode === 'predefined' ? selectedWorldId : 'Custom World';
+            
             resultContent.innerHTML = `
                 <div class="${resultClass}">
                     <strong>${resultText}</strong>
                 </div>
                 <div class="content-display">
                     <strong>Request:</strong> ${action} on ${target}
-                    <strong>Policy:</strong> ${selectedPolicyId}
-                    <strong>World:</strong> ${selectedWorldId}
+                    <strong>Policy:</strong> ${policySource}
+                    <strong>World:</strong> ${worldSource}
                     <strong>Result:</strong> ${JSON.stringify(result, null, 2)}
                 </div>
-            `;
-            
-            // Scroll to result
-            resultCard.scrollIntoView({ behavior: 'smooth' });
-        }
+            `;}
 
         // Dropdown functionality
+        document.getElementById('policy-dropdown-btn').onclick = function() {
+            const dropdown = document.getElementById('policy-dropdown');
+            const btn = this;
+            
+            dropdown.classList.toggle('open');
+            btn.classList.toggle('open');
+            btn.classList.toggle('active');
+            
+            // Close world dropdown if open
+            document.getElementById('world-dropdown').classList.remove('open');
+            document.getElementById('world-dropdown-btn').classList.remove('open', 'active');
+        };
+
+        document.getElementById('world-dropdown-btn').onclick = function() {
+            const dropdown = document.getElementById('world-dropdown');
+            const btn = this;
+            
+            dropdown.classList.toggle('open');
+            btn.classList.toggle('open');
+            btn.classList.toggle('active');
+            
+            // Close policy dropdown if open
+            document.getElementById('policy-dropdown').classList.remove('open');
+            document.getElementById('policy-dropdown-btn').classList.remove('open', 'active');
+        };
+
+        // Close dropdowns when clicking outside
         document.addEventListener('click', function(event) {
-            if (!event.target.closest('.dropdown')) {
-                document.querySelectorAll('.dropdown-content').forEach(content => content.classList.remove('open'));
-                document.querySelectorAll('.dropdown-button').forEach(btn => btn.classList.remove('active'));
+            const policyDropdown = document.getElementById('policy-dropdown');
+            const policyBtn = document.getElementById('policy-dropdown-btn');
+            const worldDropdown = document.getElementById('world-dropdown');
+            const worldBtn = document.getElementById('world-dropdown-btn');
+            
+            if (!policyDropdown.contains(event.target) && !policyBtn.contains(event.target)) {
+                policyDropdown.classList.remove('open');
+                policyBtn.classList.remove('open', 'active');
+            }
+            
+            if (!worldDropdown.contains(event.target) && !worldBtn.contains(event.target)) {
+                worldDropdown.classList.remove('open');
+                worldBtn.classList.remove('open', 'active');
             }
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            checkServerStatus();
-            loadPolicies();
-            loadWorlds();
-            
-            // Add event listeners for dropdowns
-            document.getElementById('policy-dropdown-btn').addEventListener('click', function() {
-                const dropdownContent = document.getElementById('policy-dropdown');
-                const isOpen = dropdownContent.classList.contains('open');
+        // Input field event listeners
+        document.getElementById('action-input').addEventListener('input', checkEvaluateButton);
+        document.getElementById('target-input').addEventListener('input', checkEvaluateButton);
 
-                // Close all dropdowns first
-                document.querySelectorAll('.dropdown-content').forEach(content => content.classList.remove('open'));
-                document.querySelectorAll('.dropdown-button').forEach(btn => btn.classList.remove('active'));
-
-                if (!isOpen) {
-                    dropdownContent.classList.add('open');
-                    this.classList.add('active');
-                }
-            });
-
-            document.getElementById('world-dropdown-btn').addEventListener('click', function() {
-                const dropdownContent = document.getElementById('world-dropdown');
-                const isOpen = dropdownContent.classList.contains('open');
-
-                // Close all dropdowns first
-                document.querySelectorAll('.dropdown-content').forEach(content => content.classList.remove('open'));
-                document.querySelectorAll('.dropdown-button').forEach(btn => btn.classList.remove('active'));
-
-                if (!isOpen) {
-                    dropdownContent.classList.add('open');
-                    this.classList.add('active');
-                }
-            });
-
-            // Add event listeners for input changes
-            document.getElementById('action-input').addEventListener('input', checkEvaluateButton);
-            document.getElementById('target-input').addEventListener('input', checkEvaluateButton);
-            
-            // Check server status periodically
-            setInterval(checkServerStatus, 30000);
+        // Custom editor event listeners
+        document.getElementById('custom-policy-editor').addEventListener('input', function() {
+            document.getElementById('policy-validation-result').innerHTML = '';
+            selectedPolicy = null;
+            updatePolicyContent();
+            checkEvaluateButton();
         });
+
+        document.getElementById('custom-world-editor').addEventListener('input', function() {
+            document.getElementById('world-validation-result').innerHTML = '';
+            selectedWorld = null;
+            updateWorldContent();
+            checkEvaluateButton();
+        });
+
+        // Initialize the application
+        async function init() {
+            await checkServerStatus();
+            await loadPolicies();
+            await loadWorlds();
+            
+            // Check server status every 30 seconds
+            setInterval(checkServerStatus, 30000);
+        }
+
+        // Start the application when page loads
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
