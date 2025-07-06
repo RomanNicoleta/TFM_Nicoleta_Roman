@@ -4,17 +4,21 @@
 :- use_module(library(http/http_json)).
 :- use_module(library(http/http_cors)).
 :- use_module(library(http/http_files)).
+:- use_module(library(http/http_server_files)).
 
 % Load the evaluator
 :- consult('evaluator.pl').
 
-% HTTP handlers
-:- http_handler(root(.), serve_files, [prefix]).
+% HTTP handlers - order matters!
 :- http_handler('/api/evaluate', handle_evaluate, [method(post)]).
 :- http_handler('/api/health', handle_health, [method(get)]).
+:- http_handler('/policies/', http_reply_from_files('policies', []), [prefix]).
+:- http_handler('/world/', http_reply_from_files('world', []), [prefix]).
+:- http_handler('/', serve_index, []).
+:- http_handler(root(.), http_reply_from_files('.', []), [prefix]).
 
-% Serve static files
-serve_files(Request) :-
+% Serve index file
+serve_index(Request) :-
     http_reply_file('app.html', [], Request).
 
 % Handle policy evaluation requests
