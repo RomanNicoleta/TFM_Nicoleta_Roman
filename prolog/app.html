@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgb(42, 29, 24);
             min-height: 100vh;
             color: #333;
         }
@@ -75,9 +75,9 @@
         }
 
         .mode-button.active {
-            background: #4299e1;
+            background: #335765;
             color: white;
-            box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+            box-shadow: 0 2px 8px rgba(182, 217, 224, 0.3);
         }
 
         .dropdown {
@@ -107,9 +107,9 @@
         }
 
         .dropdown-button.active {
-            background: #4299e1;
+            background: #9d5c5e;
             color: white;
-            border-color: #3182ce;
+            border-color: #d99c97;
         }
 
         .dropdown-arrow {
@@ -214,7 +214,7 @@
         .validate-button {
             width: 100%;
             padding: 8px 12px;
-            background: #805ad5;
+            background: #669591;
             color: white;
             border: none;
             border-radius: 6px;
@@ -225,7 +225,7 @@
         }
 
         .validate-button:hover {
-            background: #6b46c1;
+            background: #465a58;
         }
 
         .validation-result {
@@ -249,7 +249,7 @@
         .generate-btn {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            background:  #9d5c5e;
             color: white;
             border: none;
             border-radius: 10px;
@@ -359,8 +359,8 @@
         }
 
         .status-online {
-            background: #c6f6d5;
-            color: #22543d;
+            background: #dbe2dc;
+            color: #74a8a4;
         }
 
         .status-offline {
@@ -513,27 +513,27 @@ Example:
             </div>
      
             <button class="generate-btn" onclick="evaluatePolicy()" id="evaluate-btn" disabled>
-                🚀 Evaluate Policy
+                 Evaluate Policy
             </button>
         </div>
         
         <div class="main-content">
             <div class="content-card">
-                <h2>📄 Policy Content</h2>
+                <h2>Policy Content</h2>
                 <div id="policy-content" class="content-display">
                     Select a policy or create a custom one to view its content.
                 </div>
             </div>
 
             <div class="content-card">
-                <h2>🌐 World Context</h2>
+                <h2>World Context</h2>
                 <div id="world-content" class="content-display">
                     Select a world context or create a custom one to view its content.
                 </div>
             </div>
             
             <div class="content-card" id="result-card" style="display: none;">
-                <h2>📊 Evaluation Result</h2>
+                <h2>Evaluation Result</h2>
                 <div id="result-content"></div>
             </div>
         </div>
@@ -643,7 +643,7 @@ Example:
             policyDropdown.innerHTML = '<div class="dropdown-item">Loading policies...</div>';
             
             try {
-                // Try to load policy files from 1 to 20 (adjust range as needed)
+                // Try to load policy files from 1 to 20 
                 for (let i = 1; i <= 10; i++) {
                     try {
                         const response = await fetch(`./policies/policy_case_${i}.json`);
@@ -670,7 +670,7 @@ Example:
             worldDropdown.innerHTML = '<div class="dropdown-item">Loading world contexts...</div>';
             
             try {
-                // Try to load world files from 1 to 20 (adjust range as needed)
+                // Try to load world files from 1 to 20 
                 for (let i = 1; i <= 10; i++) {
                     try {
                         const response = await fetch(`./world/world_case_${i}.json`);
@@ -692,33 +692,34 @@ Example:
         }
 
         function populatePolicyDropdown() {
-            const policyDropdown = document.getElementById('policy-dropdown');
-            policyDropdown.innerHTML = '';
+        const policyDropdown = document.getElementById('policy-dropdown');
+        policyDropdown.innerHTML = '';
 
-            if (Object.keys(policies).length === 0) {
-                policyDropdown.innerHTML = '<div class="dropdown-item">No policies found</div>';
-                return;
+        if (Object.keys(policies).length === 0) {
+            policyDropdown.innerHTML = '<div class="dropdown-item">No policies found</div>';
+            return;
             }
 
-            Object.keys(policies).forEach(policyId => {
-                const policy = policies[policyId];
-                const item = document.createElement('div');
-                item.className = 'dropdown-item';
-                item.onclick = () => selectPolicy(policyId);
-                
-                // Extract policy name from the data or use the ID
-                const policyName = policy.uid || policy.id || policyId;
-                const policyDescription = policy.description || 'ODRL Policy';
-                
-                item.innerHTML = `
-                    <div class="category-label">Policy File</div>
-                    <div>${policyName}</div>
-                    <div class="policy-description">${policyDescription}</div>
-                `;
-                
-                policyDropdown.appendChild(item);
-            });
+        Object.keys(policies).forEach(policyId => {
+        const policy = policies[policyId];
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.onclick = () => selectPolicy(policyId);
+        
+        // Always use policyId for display name
+        const displayName = policyId;
+        const policyDescription = policy.description || 'ODRL Policy';
+        
+        item.innerHTML = `
+            <div class="category-label">Policy File</div>
+            <div>${displayName}</div>
+            <div class="policy-description">${policyDescription}</div>
+        `;
+        
+        policyDropdown.appendChild(item);
+        });
         }
+
 
         function populateWorldDropdown() {
             const worldDropdown = document.getElementById('world-dropdown');
@@ -818,7 +819,7 @@ Example:
             
             if (hasPolicyConfig && hasWorldConfig && action && target) {
                 btn.disabled = false;
-                btn.textContent = '🚀 Evaluate Policy';
+                btn.textContent = 'Evaluate Policy';
             } else {
                 btn.disabled = true;
                 btn.textContent = 'Configure Policy, World & Fill Details';
@@ -830,13 +831,13 @@ Example:
             try {
                 const response = await fetch(`${API_BASE_URL}/health`);
                 if (response.ok) {
-                    document.getElementById('status-indicator').textContent = 'Prolog Server Online';
+                    document.getElementById('status-indicator').textContent = 'ODRL Policy Authorizer';
                     document.getElementById('status-indicator').className = 'status-indicator status-online';
                 } else {
                     throw new Error('Server responded with error');
                 }
             } catch (error) {
-                document.getElementById('status-indicator').textContent = 'Prolog Server Offline';
+                document.getElementById('status-indicator').textContent = 'ODRL Policy Authorizer';
                 document.getElementById('status-indicator').className = 'status-indicator status-offline';
             }
         }
@@ -892,10 +893,10 @@ Example:
             if (result.success) {
                 if (result.result === 'permitted') {
                     resultClass = 'result-success';
-                    resultText = '✅ PERMITTED';
+                    resultText = 'PERMITTED';
                 } else if (result.result === 'denied') {
                     resultClass = 'result-denied';
-                    resultText = '❌ DENIED';
+                    resultText = 'DENIED';
                 }
             } else {
                 resultText = `❌ ERROR: ${result.message || 'Unknown error'}`;
