@@ -1,2 +1,2 @@
-For the TFM task 14/02/2025:
-Created the software that compares a request against a policy, considering the context. The result is a "report".
+This work is focused on developing a a system that evaluates ODRL-based policies using contextual information, such as the time of request, geographical, role and organizational constraints. This authorizer takes as input policies and given the state of the world, the output is a short report stating the evaluation result (permitted or denied), the request, policy and state of the world. 
+![sequence](https://github.com/user-attachments/assets/7d2d5503-c0d1-49f7-9306-512cffe01a0a)
