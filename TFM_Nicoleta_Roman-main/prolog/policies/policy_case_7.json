@@ -1,0 +1,25 @@
+{
+  "@context": "http://www.w3.org/ns/odrl.jsonld",
+  "@type": "Set",
+  "uid": "http://example.com/policy/22",
+  "permission": [
+    {
+      "uid": "http://example.com/policy/22/permission/1",
+      "target": "http://example.com/research-data/1234",
+      "assigner": "http://example.com/org/research-institute",
+      "action": "access",
+      "constraint": [
+        {
+          "@id": "http://example.com/constraint/11",
+          "leftOperand": "country",
+          "operator": "in",
+          "rightOperand": [
+            "https://schema.org/Country/US",
+            "https://schema.org/Country/CA",
+            "https://schema.org/Country/GB"
+          ]
+        }
+      ]
+    }
+  ]
+}

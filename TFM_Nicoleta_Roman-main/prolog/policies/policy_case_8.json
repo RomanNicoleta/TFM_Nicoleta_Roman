@@ -1,0 +1,30 @@
+{
+  "@context": "http://www.w3.org/ns/odrl.jsonld",
+  "@type": "Set",
+  "uid": "http://example.com/policy/23",
+  "permission": [
+    {
+      "uid": "http://example.com/policy/23/permission/1",
+      "target": "http://example.com/strategic-documents/5678",
+      "assigner": "http://example.com/org/global-corp",
+      "action": "view",
+      "constraint": [
+        {
+          "@id": "http://example.com/constraint/12",
+          "leftOperand": "organization",
+          "operator": "eq",
+          "rightOperand": "http://example.com/company/TechInnovate"
+        },
+        {
+          "@id": "http://example.com/constraint/13",
+          "leftOperand": "country",
+          "operator": "notIn",
+          "rightOperand": [
+            "https://schema.org/Country/CN",
+            "https://schema.org/Country/RU"
+          ]
+        }
+      ]
+    }
+  ]
+}

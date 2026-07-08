@@ -1,0 +1,24 @@
+{
+  "@context": "http://www.w3.org/ns/odrl.jsonld",
+  "@type": "Set",
+  "uid": "http://example.com/policy/21",
+  "permission": [
+    {
+      "uid": "http://example.com/policy/21/permission/1",
+      "target": "http://example.com/hr-records/6789",
+      "assigner": "http://example.com/org/human-resources",
+      "action": "view",
+      "constraint": [
+        {
+          "@id": "http://example.com/constraint/10",
+          "leftOperand": "role",
+          "operator": "isPartOf",
+          "rightOperand": [
+            "hr-manager",
+            "legal-counsel"
+          ]
+        }
+      ]
+    }
+  ]
+}

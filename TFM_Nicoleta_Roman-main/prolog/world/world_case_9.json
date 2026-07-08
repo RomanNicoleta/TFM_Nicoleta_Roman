@@ -1,0 +1,8 @@
+{
+  "world": {
+    "currentUserLocation": {
+      "country": "https://schema.org/Country/KR"
+    },
+    "currentUserOrganization": "http://example.com/company/TechNewYork"
+  }
+}
