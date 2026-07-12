@@ -1,1 +1,961 @@
-q
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ODRL Policy Authorizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #151c24;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .policy-section, .world-section, .request-section {
+            margin-bottom: 25px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 15px;
+        }
+
+        .mode-button {
+            flex: 1;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            color: #718096;
+        }
+
+        .mode-button.active {
+            background: #335765;
+            color: white;
+            box-shadow: 0 2px 8px rgba(182, 217, 224, 0.3);
+        }
+
+        .dropdown {
+            position: relative;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .dropdown-button {
+            width: 100%;
+            padding: 12px 15px;
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-button:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .dropdown-button.active {
+            background: #9d5c5e;
+            color: white;
+            border-color: #d99c97;
+        }
+
+        .dropdown-arrow {
+            transition: transform 0.3s ease;
+        }
+
+        .dropdown-button.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-content {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .dropdown-content.open {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .dropdown-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background: #f8fafc;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item.selected {
+            background: #e6fffa;
+            color: #234e52;
+            font-weight: 600;
+        }
+
+        .category-label {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .policy-description {
+            font-size: 11px;
+            color: #718096;
+            margin-top: 2px;
+        }
+
+        .custom-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            background: #2d3748;
+            color: #e2e8f0;
+            border: 2px solid #4a5568;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .custom-editor:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .custom-editor::placeholder {
+            color: #a0aec0;
+        }
+
+        .editor-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .editor-section {
+            margin-bottom: 20px;
+        }
+
+        .validate-button {
+            width: 100%;
+            padding: 8px 12px;
+            background: #669591;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .validate-button:hover {
+            background: #465a58;
+        }
+
+        .validation-result {
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .validation-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .validation-error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background:  #9d5c5e;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(72, 187, 120, 0.4);
+        }
+
+        .generate-btn:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .content-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-card h2 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 22px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .content-display {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-success {
+            background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .result-denied {
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+            color: #742a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .result-error {
+            background: linear-gradient(135deg, #feebc8 0%, #fbd38d 100%);
+            color: #7b341e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+        }
+
+        .status-online {
+            background: #dbe2dc;
+            color: #74a8a4;
+        }
+
+        .status-offline {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .disabled-section {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #742a2a;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator" id="status-indicator">Checking server...</div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="policy-section">
+                <h3>Policy Configuration</h3>
+                
+                <div class="mode-toggle">
+                    <button class="mode-button active" onclick="switchMode('policy', 'predefined')">Predefined</button>
+                    <button class="mode-button" onclick="switchMode('policy', 'custom')">Custom</button>
+                </div>
+
+                <div id="policy-predefined-section">
+                    <div class="dropdown">
+                        <button class="dropdown-button" id="policy-dropdown-btn">
+                            <span>Select a policy...</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="dropdown-content" id="policy-dropdown">
+                            <!-- Dynamic content loaded from files -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="policy-custom-section" class="hidden">
+                    <div class="editor-section">
+                        <label class="editor-label">Policy JSON:</label>
+                        <textarea class="custom-editor" id="custom-policy-editor" placeholder='Enter your ODRL policy JSON here...
+
+Example:
+{
+  "@context": "http://www.w3.org/ns/odrl/2/",
+  "@type": "Set",
+  "uid": "http://example.com/policy/1234",
+  "permission": [{
+    "target": "http://example.com/document/5678",
+    "action": "access",
+    "constraint": [{
+      "leftOperand": "dateTime",
+      "operator": "lt",
+      "rightOperand": "2024-12-31T23:59:59"
+    }]
+  }]
+}'></textarea>
+                        <button class="validate-button" onclick="validateJSON('policy')">Validate JSON</button>
+                        <div id="policy-validation-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="world-section">
+                <h3>World Configuration</h3>
+                
+                <div class="mode-toggle">
+                    <button class="mode-button active" onclick="switchMode('world', 'predefined')">Predefined</button>
+                    <button class="mode-button" onclick="switchMode('world', 'custom')">Custom</button>
+                </div>
+
+                <div id="world-predefined-section">
+                    <div class="dropdown">
+                        <button class="dropdown-button" id="world-dropdown-btn">
+                            <span>Select a world context...</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="dropdown-content" id="world-dropdown">
+                            <!-- Dynamic content loaded from files -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="world-custom-section" class="hidden">
+                    <div class="editor-section">
+                        <label class="editor-label">World State JSON:</label>
+                        <textarea class="custom-editor" id="custom-world-editor" placeholder='Enter your world state JSON here...
+
+Example:
+{
+  "currentTime": {
+    "dateTime": "2024-11-15T10:30:00"
+  },
+  "currentUserRole": "researcher",
+  "currentUserLocation": {
+    "country": "US"
+  },
+  "currentUserOrganization": "University of Example",
+  "currentResearchContext": {
+    "researchEthicsApproval": true,
+    "dataProcessingMethod": "anonymized"
+  }
+}'></textarea>
+                        <button class="validate-button" onclick="validateJSON('world')">Validate JSON</button>
+                        <div id="world-validation-result"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="request-section">
+                <h3>Request Details</h3>
+                <div class="input-group">
+                    <input type="text" id="action-input" placeholder="Action (e.g., access, use, modify)">
+                </div>
+                <div class="input-group">
+                    <input type="text" id="target-input" placeholder="Target URI">
+                </div>
+                <div style="font-size: 12px; color: #718096; margin-top: 5px;">
+                    Enter the action and target for evaluation
+                </div>
+            </div>
+     
+            <button class="generate-btn" onclick="evaluatePolicy()" id="evaluate-btn" disabled>
+                 Evaluate Policy
+            </button>
+        </div>
+        
+        <div class="main-content">
+            <div class="content-card">
+                <h2>Policy Content</h2>
+                <div id="policy-content" class="content-display">
+                    Select a policy or create a custom one to view its content.
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h2>World Context</h2>
+                <div id="world-content" class="content-display">
+                    Select a world context or create a custom one to view its content.
+                </div>
+            </div>
+            
+            <div class="content-card" id="result-card" style="display: none;">
+                <h2>Evaluation Result</h2>
+                <div id="result-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/api';
+        
+        let policies = {};
+        let worlds = {};
+        let selectedPolicyId = null;
+        let selectedWorldId = null;
+        let selectedPolicy = null;
+        let selectedWorld = null;
+        let policyMode = 'predefined';
+        let worldMode = 'predefined';
+
+        function switchMode(type, mode) {
+            const buttons = document.querySelectorAll(`#${type === 'policy' ? 'policy-section' : 'world-section'} .mode-button`);
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (type === 'policy') {
+                policyMode = mode;
+                document.getElementById('policy-predefined-section').classList.toggle('hidden', mode === 'custom');
+                document.getElementById('policy-custom-section').classList.toggle('hidden', mode === 'predefined');
+                
+                if (mode === 'custom') {
+                    selectedPolicyId = null;
+                    selectedPolicy = null;
+                    updatePolicyContent();
+                }
+            } else {
+                worldMode = mode;
+                document.getElementById('world-predefined-section').classList.toggle('hidden', mode === 'custom');
+                document.getElementById('world-custom-section').classList.toggle('hidden', mode === 'predefined');
+                
+                if (mode === 'custom') {
+                    selectedWorldId = null;
+                    selectedWorld = null;
+                    updateWorldContent();
+                }
+            }
+            
+            checkEvaluateButton();
+        }
+
+        function validateJSON(type) {
+            const editor = document.getElementById(`custom-${type}-editor`);
+            const resultDiv = document.getElementById(`${type}-validation-result`);
+            
+            try {
+                const json = JSON.parse(editor.value);
+                resultDiv.innerHTML = '<div class="validation-success">✓ Valid JSON</div>';
+                
+                if (type === 'policy') {
+                    selectedPolicy = json;
+                    updatePolicyContent();
+                } else {
+                    selectedWorld = json;
+                    updateWorldContent();
+                }
+                
+                checkEvaluateButton();
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="validation-error">✗ Invalid JSON: ${error.message}</div>`;
+                
+                if (type === 'policy') {
+                    selectedPolicy = null;
+                } else {
+                    selectedWorld = null;
+                }
+                
+                checkEvaluateButton();
+            }
+        }
+
+        function updatePolicyContent() {
+            const content = document.getElementById('policy-content');
+            if (selectedPolicy) {
+                content.textContent = JSON.stringify(selectedPolicy, null, 2);
+            } else if (policyMode === 'custom') {
+                content.textContent = 'Enter and validate your custom policy JSON.';
+            } else {
+                content.textContent = 'Select a policy to view its content.';
+            }
+        }
+
+        function updateWorldContent() {
+            const content = document.getElementById('world-content');
+            if (selectedWorld) {
+                content.textContent = JSON.stringify(selectedWorld, null, 2);
+            } else if (worldMode === 'custom') {
+                content.textContent = 'Enter and validate your custom world state JSON.';
+            } else {
+                content.textContent = 'Select a world context to view its content.';
+            }
+        }
+
+        async function loadPolicies() {
+            const policyDropdown = document.getElementById('policy-dropdown');
+            policyDropdown.innerHTML = '<div class="dropdown-item">Loading policies...</div>';
+            
+            try {
+        
+                for (let i = 1; i <= 10; i++) {
+                    try {
+                        const response = await fetch(`./policies/policy_case_${i}.json`);
+                        if (response.ok) {
+                            const policyData = await response.json();
+                            policies[`policy_case_${i}`] = policyData;
+                        }
+                    } catch (error) {
+                        continue;
+                    }
+                }
+                populatePolicyDropdown();
+            } catch (error) {
+                policyDropdown.innerHTML = '<div class="error-message">Error loading policies: ' + error.message + '</div>';
+            }
+        }
+        async function loadWorlds() {
+            const worldDropdown = document.getElementById('world-dropdown');
+            worldDropdown.innerHTML = '<div class="dropdown-item">Loading world contexts...</div>';
+            
+            try {
+                for (let i = 1; i <= 10; i++) {
+                    try {
+                        const response = await fetch(`./world/world_case_${i}.json`);
+                        if (response.ok) {
+                            const worldData = await response.json();
+                            worlds[`world_case_${i}`] = worldData;
+                        }
+                    } catch (error) {
+                        continue;
+                    }
+                }
+                populateWorldDropdown();
+            } catch (error) {
+                worldDropdown.innerHTML = '<div class="error-message">Error loading world contexts: ' + error.message + '</div>';
+            }
+        }
+
+        function populatePolicyDropdown() {
+        const policyDropdown = document.getElementById('policy-dropdown');
+        policyDropdown.innerHTML = '';
+
+        if (Object.keys(policies).length === 0) {
+            policyDropdown.innerHTML = '<div class="dropdown-item">No policies found</div>';
+            return;
+            }
+
+        Object.keys(policies).forEach(policyId => {
+        const policy = policies[policyId];
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.onclick = () => selectPolicy(policyId);
+        
+        const displayName = policyId;
+        const policyDescription = policy.description || 'ODRL Policy';
+        
+        item.innerHTML = `
+            <div class="category-label">Policy File</div>
+            <div>${displayName}</div>
+            <div class="policy-description">${policyDescription}</div>
+        `;
+        
+        policyDropdown.appendChild(item);
+        });
+        }
+
+
+        function populateWorldDropdown() {
+            const worldDropdown = document.getElementById('world-dropdown');
+            worldDropdown.innerHTML = '';
+
+            if (Object.keys(worlds).length === 0) {
+                worldDropdown.innerHTML = '<div class="dropdown-item">No world contexts found</div>';
+                return;
+            }
+
+            Object.keys(worlds).forEach(worldId => {
+                const world = worlds[worldId];
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                item.onclick = () => selectWorld(worldId);
+                
+                const worldName = world.name || world.id || worldId;
+                const worldDescription = world.description || 'World Context';
+                
+                item.innerHTML = `
+                    <div class="category-label">World File</div>
+                    <div>${worldName}</div>
+                    <div class="policy-description">${worldDescription}</div>
+                `;
+                
+                worldDropdown.appendChild(item);
+            });
+        }
+
+        function selectPolicy(policyId) {
+            selectedPolicyId = policyId;
+            selectedPolicy = policies[policyId];
+
+            document.querySelectorAll('#policy-dropdown .dropdown-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.closest('.dropdown-item').classList.add('selected');
+
+            document.getElementById('policy-dropdown-btn').querySelector('span').textContent = policyId;
+
+            updatePolicyContent();
+
+            document.getElementById('policy-dropdown').classList.remove('open');
+            document.getElementById('policy-dropdown-btn').classList.remove('active');
+
+            if (selectedPolicy.permission && selectedPolicy.permission[0]) {
+                const permission = selectedPolicy.permission[0];
+                if (permission.action) {
+                    document.getElementById('action-input').value = permission.action;
+                }
+                if (permission.target) {
+                    document.getElementById('target-input').value = permission.target;
+                }
+            }
+            
+            checkEvaluateButton();
+        }
+
+        function selectWorld(worldId) {
+            selectedWorldId = worldId;
+            selectedWorld = worlds[worldId];
+
+            document.querySelectorAll('#world-dropdown .dropdown-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.closest('.dropdown-item').classList.add('selected');
+
+            document.getElementById('world-dropdown-btn').querySelector('span').textContent = worldId;
+
+            updateWorldContent();
+
+            document.getElementById('world-dropdown').classList.remove('open');
+            document.getElementById('world-dropdown-btn').classList.remove('active');
+            
+            checkEvaluateButton();
+        }
+
+        function checkEvaluateButton() {
+            const btn = document.getElementById('evaluate-btn');
+            const action = document.getElementById('action-input').value.trim();
+            const target = document.getElementById('target-input').value.trim();
+            
+            const hasPolicyConfig = (policyMode === 'predefined' && selectedPolicy) || 
+                                   (policyMode === 'custom' && selectedPolicy);
+            const hasWorldConfig = (worldMode === 'predefined' && selectedWorld) || 
+                                  (worldMode === 'custom' && selectedWorld);
+            
+            if (hasPolicyConfig && hasWorldConfig && action && target) {
+                btn.disabled = false;
+                btn.textContent = 'Evaluate Policy';
+            } else {
+                btn.disabled = true;
+                btn.textContent = 'Configure Policy, World & Fill Details';
+            }
+        }
+
+        async function checkServerStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    document.getElementById('status-indicator').textContent = 'ODRL Policy Authorizer';
+                    document.getElementById('status-indicator').className = 'status-indicator status-online';
+                } else {
+                    throw new Error('Server responded with error');
+                }
+            } catch (error) {
+                document.getElementById('status-indicator').textContent = 'ODRL Policy Authorizer';
+                document.getElementById('status-indicator').className = 'status-indicator status-offline';
+            }
+        }
+
+        async function evaluatePolicy() {
+            if (!selectedPolicy || !selectedWorld) {
+                alert('Please configure both policy and world context');
+                return;
+            }
+
+            const action = document.getElementById('action-input').value.trim();
+            const target = document.getElementById('target-input').value.trim();
+
+            if (!action || !target) {
+                alert('Please provide both action and target');
+                return;
+            }
+
+            const btn = document.getElementById('evaluate-btn');
+            btn.disabled = true;
+            btn.textContent = 'Evaluating';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/evaluate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        policy: selectedPolicy,
+                        world: selectedWorld,
+                        action: action,
+                        target: target
+                    })
+                });
+
+                const result = await response.json();
+                displayResult(result, action, target);
+            } catch (error) {
+                displayResult({ success: false, message: error.message }, action, target);
+            } finally {
+                checkEvaluateButton();
+            }
+        }
+
+        function displayResult(result, action, target) {
+            const resultCard = document.getElementById('result-card');
+            const resultContent = document.getElementById('result-content');
+            
+            resultCard.style.display = 'block';
+            
+            let resultClass = 'result-error';
+            let resultText = 'Error occurred';
+            
+            if (result.success) {
+                if (result.result === 'permitted') {
+                    resultClass = 'result-success';
+                    resultText = 'PERMITTED';
+                } else if (result.result === 'denied') {
+                    resultClass = 'result-denied';
+                    resultText = 'DENIED';
+                }
+            } else {
+                resultText = `ERROR: ${result.message || 'Unknown error'}`;
+            }
+            
+            const policySource = policyMode === 'predefined' ? selectedPolicyId : 'Custom Policy';
+            const worldSource = worldMode === 'predefined' ? selectedWorldId : 'Custom World';
+            
+            resultContent.innerHTML = `
+                <div class="${resultClass}">
+                    <strong>${resultText}</strong>
+                </div>
+                <div class="content-display">
+                    <strong>Request:</strong> ${action} on ${target}
+                    <strong>Policy:</strong> ${policySource}
+                    <strong>World:</strong> ${worldSource}
+                    <strong>Result:</strong> ${JSON.stringify(result, null, 2)}
+                </div>
+            `;}
+
+        document.getElementById('policy-dropdown-btn').onclick = function() {
+            const dropdown = document.getElementById('policy-dropdown');
+            const btn = this;
+            
+            dropdown.classList.toggle('open');
+            btn.classList.toggle('open');
+            btn.classList.toggle('active');
+
+            document.getElementById('world-dropdown').classList.remove('open');
+            document.getElementById('world-dropdown-btn').classList.remove('open', 'active');
+        };
+
+        document.getElementById('world-dropdown-btn').onclick = function() {
+            const dropdown = document.getElementById('world-dropdown');
+            const btn = this;
+            
+            dropdown.classList.toggle('open');
+            btn.classList.toggle('open');
+            btn.classList.toggle('active');
+
+            document.getElementById('policy-dropdown').classList.remove('open');
+            document.getElementById('policy-dropdown-btn').classList.remove('open', 'active');
+        };
+        document.addEventListener('click', function(event) {
+            const policyDropdown = document.getElementById('policy-dropdown');
+            const policyBtn = document.getElementById('policy-dropdown-btn');
+            const worldDropdown = document.getElementById('world-dropdown');
+            const worldBtn = document.getElementById('world-dropdown-btn');
+            
+            if (!policyDropdown.contains(event.target) && !policyBtn.contains(event.target)) {
+                policyDropdown.classList.remove('open');
+                policyBtn.classList.remove('open', 'active');
+            }
+            
+            if (!worldDropdown.contains(event.target) && !worldBtn.contains(event.target)) {
+                worldDropdown.classList.remove('open');
+                worldBtn.classList.remove('open', 'active');
+            }
+        });
+
+        document.getElementById('action-input').addEventListener('input', checkEvaluateButton);
+        document.getElementById('target-input').addEventListener('input', checkEvaluateButton);
+
+        document.getElementById('custom-policy-editor').addEventListener('input', function() {
+            document.getElementById('policy-validation-result').innerHTML = '';
+            selectedPolicy = null;
+            updatePolicyContent();
+            checkEvaluateButton();
+        });
+
+        document.getElementById('custom-world-editor').addEventListener('input', function() {
+            document.getElementById('world-validation-result').innerHTML = '';
+            selectedWorld = null;
+            updateWorldContent();
+            checkEvaluateButton();
+        });
+
+        async function init() {
+            await checkServerStatus();
+            await loadPolicies();
+            await loadWorlds();
+            
+            setInterval(checkServerStatus, 30000);
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
